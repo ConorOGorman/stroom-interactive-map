@@ -59,7 +59,7 @@ function resolvePredictedCard(className) {
 function enableMockMode(statusEl, badgeEl) {
   mockMode = true;
   badgeEl.hidden = false;
-  statusEl.textContent = 'Listening for cards...';
+  statusEl.textContent = 'Show Cards on Camera';
   window.addEventListener('keydown', (event) => {
     const target = event.target;
     if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
@@ -80,7 +80,7 @@ function acceptCard(card, statusEl) {
     statusEl.textContent = `${card.label} detected`;
     statusEl.parentElement.classList.add('is-detected');
     setTimeout(() => {
-      statusEl.textContent = mockMode ? 'Listening for cards...' : 'Listening for cards...';
+      statusEl.textContent = mockMode ? 'Show Cards on Camera' : 'Listening for cards...';
       statusEl.parentElement.classList.remove('is-detected');
     }, 1300);
   }

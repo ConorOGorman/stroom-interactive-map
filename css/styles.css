@@ -1,16 +1,16 @@
 :root {
-  --green: #4A6642;
-  --green-dark: #2C3E2D;
-  --green-light: #7A9B7A;
+  --green: #008A00;
+  --green-dark: #5F845C;
+  --green-light: #78956E;
   --gold: #C8A84B;
-  --bg: #1A1A1A;
+  --bg: #FFFFFF;
   --surface: #EAEAE4;
-  --panel: #D6D6CE;
+  --panel: #D9D9D9;
   --text: #1A1A1A;
   --text-light: #FFFFFF;
   --muted: #6B6B60;
-  --table-centre: radial-gradient(circle at 42% 32%, #7A6138 0%, #513D23 46%, #2F2418 100%);
-  --shadow-green: 0 0 70px rgba(122, 155, 122, 0.28), 0 36px 90px rgba(0, 0, 0, 0.48);
+  --table-centre: #F5F5F5;
+  --shadow-green: none;
 }
 
 * {
@@ -42,10 +42,7 @@ button:disabled {
 .main-screen {
   min-height: 100vh;
   overflow: hidden;
-  background:
-    linear-gradient(115deg, rgba(74, 102, 66, 0.2), transparent 34%),
-    radial-gradient(circle at 74% 18%, rgba(200, 168, 75, 0.08), transparent 30%),
-    var(--bg);
+  background: #FFFFFF;
 }
 
 .brand-lockup,
@@ -58,25 +55,26 @@ button:disabled {
 .brand-lockup strong,
 .mobile-header span:last-child {
   display: block;
-  color: var(--text-light);
+  color: #545454;
   font-family: Archivo, sans-serif;
-  font-size: 18px;
+  font-size: 30px;
+  line-height: 1;
 }
 
 .brand-lockup span:not(.brand-mark) {
   display: block;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 12px;
-  margin-top: 2px;
+  color: #555;
+  font-size: 16px;
+  margin-top: 6px;
 }
 
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: linear-gradient(145deg, var(--green-light), var(--green));
+  background: #6F956A;
   color: #fff;
   font-family: Archivo, sans-serif;
   font-weight: 800;
@@ -87,36 +85,43 @@ button:disabled {
   inset: 0 auto 0 0;
   z-index: 10;
   width: 300px;
-  padding: 22px 20px;
+  padding: 32px 22px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  background: rgba(16, 18, 15, 0.9);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(18px);
+  gap: 34px;
+  background: #D9D9D9;
+  border-right: 0;
+  backdrop-filter: none;
+}
+
+.camera-card {
+  margin-top: 2px;
+  position: relative;
 }
 
 .camera-card video {
   width: 100%;
-  height: 168px;
+  height: 170px;
   display: block;
   object-fit: cover;
-  border-radius: 10px;
-  background: #050505;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: #F2F2F2;
+  border: 0;
 }
 
 .detection-status {
-  min-height: 38px;
-  margin-top: 10px;
-  padding: 10px 11px;
+  width: fit-content;
+  min-height: 33px;
+  margin: 14px auto 0;
+  padding: 7px 12px;
   display: flex;
   align-items: center;
   gap: 9px;
-  color: #fff;
-  font-size: 13px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  color: #F5F5F5;
+  font-size: 15px;
+  background: #1F1F1F;
+  border-radius: 4px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.32);
 }
 
 .detection-status.is-detected {
@@ -135,7 +140,7 @@ button:disabled {
 
 .section-label,
 .eyebrow {
-  color: rgba(255, 255, 255, 0.58);
+  color: #5F5F5F;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0;
@@ -143,8 +148,8 @@ button:disabled {
 }
 
 .selected-cards {
-  min-height: 132px;
-  max-height: 245px;
+  min-height: 96px;
+  max-height: 195px;
   margin-top: 12px;
   display: flex;
   flex-direction: column;
@@ -155,7 +160,7 @@ button:disabled {
 
 .empty-state {
   margin: 0;
-  color: rgba(255, 255, 255, 0.48);
+  color: #666;
   font-size: 13px;
   line-height: 1.45;
 }
@@ -168,7 +173,7 @@ button:disabled {
   min-height: 36px;
   padding: 6px 9px;
   border-radius: 8px;
-  background: #F4F4EF;
+  background: #F5F5F5;
   color: var(--text);
   font-size: 13px;
   font-weight: 700;
@@ -177,7 +182,7 @@ button:disabled {
 
 .selected-chip {
   justify-content: space-between;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .selected-chip button,
@@ -201,7 +206,7 @@ button:disabled {
   height: 24px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--green);
+  background: #6F956A;
   color: #fff;
   font-size: 10px;
   font-weight: 800;
@@ -212,7 +217,7 @@ button:disabled {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #E3C86B;
+  color: #006E00;
   font-size: 13px;
   font-weight: 700;
 }
@@ -226,24 +231,25 @@ button:disabled {
 .primary-button,
 .secondary-button {
   width: 100%;
-  min-height: 48px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border: 0;
-  border-radius: 10px;
-  padding: 0 16px;
+  border-radius: 8px;
+  padding: 0 15px;
+  font-size: 16px;
   font-weight: 800;
 }
 
 .primary-button {
-  background: linear-gradient(135deg, var(--green-light), var(--green));
+  background: #008A00;
   color: #fff;
-  box-shadow: 0 14px 30px rgba(74, 102, 66, 0.28);
+  box-shadow: none;
 }
 
 .secondary-button {
-  background: rgba(234, 234, 228, 0.95);
+  background: #F5F5F5;
   color: var(--text);
 }
 
@@ -257,18 +263,18 @@ button:disabled {
 
 .table-top {
   position: relative;
-  width: min(72vh, calc(100vw - 430px));
-  min-width: 560px;
+  width: min(82vh, calc(100vw - 390px));
+  min-width: 680px;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--table-centre);
-  box-shadow: var(--shadow-green);
+  box-shadow: 0 0 0 70px #9D9D9B;
 }
 
 .table-top::before {
-  content: "";
+  content: none;
   position: absolute;
   inset: 22px;
   border-radius: 50%;
@@ -279,8 +285,8 @@ button:disabled {
 
 .map-container {
   position: relative;
-  width: 84%;
-  height: 84%;
+  width: 68%;
+  height: 68%;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -291,53 +297,70 @@ button:disabled {
   width: 100%;
   height: 100%;
   overflow: visible;
-  filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.24));
+  filter: drop-shadow(6px 8px 0 rgba(0, 0, 0, 0.55));
+}
+
+.region-map path,
+.region-map polygon {
+  fill: #008A00;
+  stroke: rgba(255, 255, 255, 0.72);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
 }
 
 .map-marker {
-  fill: #D6D6CE;
-  opacity: 0.5;
-  r: 8px;
+  opacity: 0;
   cursor: default;
   transition: all 300ms ease;
-  transform-box: fill-box;
+  transform-box: view-box;
   transform-origin: center;
+  pointer-events: none;
+}
+
+.pin-body {
+  fill: #E7473D;
+  stroke: #111;
+  stroke-width: 4px;
+  vector-effect: non-scaling-stroke;
+}
+
+.pin-centre {
+  fill: #008A00;
+  stroke: #111;
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
 }
 
 .marker--matched {
-  fill: var(--green);
   opacity: 1;
-  r: 12px;
   cursor: pointer;
-  animation: markerPulse 2s infinite;
+  pointer-events: auto;
+  animation: none;
 }
 
 .marker--matched:hover,
 .marker--matched:focus {
-  fill: var(--gold);
-  r: 14px;
   outline: none;
+  transform: scale(1.08);
 }
 
 .marker--unmatched {
-  fill: #D6D6CE;
-  opacity: 0.2;
-  r: 6px;
+  opacity: 0;
 }
 
-.marker--selected {
-  stroke: var(--gold);
-  stroke-width: 3px;
+.marker--selected .pin-body {
+  stroke: #C8A84B;
+  stroke-width: 6px;
 }
 
 .match-badge {
   position: absolute;
-  top: 9vh;
-  left: calc(50% + 124px);
+  top: 7vh;
+  left: calc(50% + 90px);
   z-index: 4;
   padding: 10px 14px;
-  border-radius: 10px;
-  background: var(--surface);
+  border-radius: 6px;
+  background: #F2F2F2;
   color: var(--text);
   font-size: 14px;
   font-weight: 800;
@@ -346,15 +369,17 @@ button:disabled {
 
 .location-panel {
   position: fixed;
-  top: 50%;
-  right: 28px;
+  top: 38%;
+  right: 7%;
   z-index: 12;
-  width: 260px;
-  transform: translateY(-50%);
-  padding: 22px;
+  width: 240px;
+  min-height: 130px;
+  transform: none;
+  padding: 22px 24px;
+  border: 6px solid #9D9D9B;
   border-radius: 12px;
-  background: rgba(250, 250, 246, 0.98);
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.36);
+  background: #D9D9D9;
+  box-shadow: none;
 }
 
 .location-panel .section-label {
@@ -362,9 +387,9 @@ button:disabled {
 }
 
 .location-panel h2 {
-  margin: 10px 34px 6px 0;
+  margin: 8px 24px 6px 0;
   font-family: Archivo, sans-serif;
-  font-size: 21px;
+  font-size: 20px;
   line-height: 1.12;
 }
 
@@ -375,13 +400,13 @@ button:disabled {
 }
 
 .service-list {
-  margin: 18px 0;
+  margin: 14px 0;
   padding-left: 18px;
   line-height: 1.45;
 }
 
 .tag-row {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   gap: 6px;
 }
@@ -409,11 +434,15 @@ button:disabled {
   z-index: 20;
   max-width: 260px;
   padding: 10px 11px;
-  border: 1px solid rgba(200, 168, 75, 0.34);
-  border-radius: 10px;
-  background: rgba(36, 31, 19, 0.86);
-  color: #fff8dc;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+  border: 1px solid #D0D0D0;
+  border-radius: 8px;
+  background: #F4F4F4;
+  color: #333;
+  box-shadow: none;
+}
+
+.utility-map-button {
+  display: none;
 }
 
 .demo-badge strong,

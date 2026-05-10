@@ -4,6 +4,7 @@ import { getMatchedLocations, locations } from './locations.js';
 let svg = null;
 let markerLayer = null;
 let selectedMarkerId = null;
+let viewBox = [0, 0, 100, 100];
 
 export async function initMap(container, infoPanel, matchBadge) {
   svg = await loadSvg();
@@ -19,7 +20,7 @@ export function updateMap(cards, infoPanel, matchBadge) {
   const ids = cards.map((card) => card.id);
   const matched = new Map(getMatchedLocations(ids).map((location) => [location.id, location]));
   const hasSelection = ids.length > 0;
-  markerLayer.querySelectorAll('circle[data-location-id]').forEach((marker) => {
+  markerLayer.querySelectorAll('.map-marker[data-location-id]').forEach((marker) => {
     const location = locations.find((item) => item.id === marker.dataset.locationId);
     const isMatched = matched.has(location.id);
     marker.classList.toggle('marker--matched', isMatched);
@@ -42,9 +43,11 @@ async function loadSvg() {
     const parsed = new DOMParser().parseFromString(text, 'image/svg+xml');
     const loadedSvg = parsed.documentElement;
     if (!loadedSvg.getAttribute('viewBox')) throw new Error('SVG needs a viewBox');
+    viewBox = loadedSvg.getAttribute('viewBox').split(/\s+/).map(Number);
     return document.importNode(loadedSvg, true);
   } catch (error) {
     const fallback = document.getElementById('fallback-map-template');
+    viewBox = fallback.content.querySelector('svg').getAttribute('viewBox').split(/\s+/).map(Number);
     return fallback.content.querySelector('svg').cloneNode(true);
   }
 }
@@ -61,15 +64,23 @@ function ensureLayers() {
 function renderMarkers(infoPanel) {
   markerLayer.innerHTML = '';
   locations.forEach((location) => {
-    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const body = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const centre = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    const point = percentToSvgPoint(location.svgX, location.svgY);
     marker.dataset.locationId = location.id;
     marker.classList.add('map-marker');
-    marker.setAttribute('cx', `${location.svgX}%`);
-    marker.setAttribute('cy', `${location.svgY}%`);
-    marker.setAttribute('r', '8');
+    marker.setAttribute('transform', `translate(${point.x} ${point.y})`);
     marker.setAttribute('tabindex', '0');
     marker.setAttribute('role', 'button');
     marker.setAttribute('aria-label', location.name);
+    body.classList.add('pin-body');
+    body.setAttribute('d', 'M0 0 C-10 -13 -18 -22 -18 -34 C-18 -45 -10 -53 0 -53 C10 -53 18 -45 18 -34 C18 -22 10 -13 0 0Z');
+    centre.classList.add('pin-centre');
+    centre.setAttribute('cx', '0');
+    centre.setAttribute('cy', '-34');
+    centre.setAttribute('r', '7');
+    marker.append(body, centre);
     marker.addEventListener('click', () => {
       if (!marker.classList.contains('marker--matched')) return;
       selectedMarkerId = location.id;
@@ -81,6 +92,14 @@ function renderMarkers(infoPanel) {
     });
     markerLayer.appendChild(marker);
   });
+}
+
+function percentToSvgPoint(svgX, svgY) {
+  const [minX, minY, width, height] = viewBox;
+  return {
+    x: minX + (width * svgX / 100),
+    y: minY + (height * svgY / 100),
+  };
 }
 
 function openInfoPanel(location, panel) {
