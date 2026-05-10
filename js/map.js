@@ -75,11 +75,11 @@ function renderMarkers(infoPanel) {
     marker.setAttribute('role', 'button');
     marker.setAttribute('aria-label', location.name);
     body.classList.add('pin-body');
-    body.setAttribute('d', 'M0 0 C-10 -13 -18 -22 -18 -34 C-18 -45 -10 -53 0 -53 C10 -53 18 -45 18 -34 C18 -22 10 -13 0 0Z');
+    body.setAttribute('d', 'M0 0 C-6 -8 -11 -14 -11 -22 C-11 -29 -6 -34 0 -34 C6 -34 11 -29 11 -22 C11 -14 6 -8 0 0Z');
     centre.classList.add('pin-centre');
     centre.setAttribute('cx', '0');
-    centre.setAttribute('cy', '-34');
-    centre.setAttribute('r', '7');
+    centre.setAttribute('cy', '-22');
+    centre.setAttribute('r', '4.2');
     marker.append(body, centre);
     marker.addEventListener('click', () => {
       if (!marker.classList.contains('marker--matched')) return;
@@ -110,7 +110,7 @@ function openInfoPanel(location, panel) {
   panel.querySelector('[data-location-services]').innerHTML = location.services.map((service) => `<li>${service}</li>`).join('');
   panel.querySelector('[data-location-tags]').innerHTML = [
     ...location.relevant_job_types,
-    ...location.relevant_personas.slice(0, 2),
+    ...location.relevant_conditions.slice(0, 2),
   ].map((id) => `<span>${CARD_BY_ID[id]?.label || id}</span>`).join('');
 }
 

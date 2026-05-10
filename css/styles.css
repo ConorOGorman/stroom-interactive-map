@@ -317,17 +317,17 @@ button:disabled {
   pointer-events: none;
 }
 
-.pin-body {
-  fill: #E7473D;
+#location-markers .pin-body {
+  fill: #F04A3E;
   stroke: #111;
-  stroke-width: 4px;
+  stroke-width: 2.8px;
   vector-effect: non-scaling-stroke;
 }
 
-.pin-centre {
+#location-markers .pin-centre {
   fill: #008A00;
   stroke: #111;
-  stroke-width: 3px;
+  stroke-width: 2px;
   vector-effect: non-scaling-stroke;
 }
 
@@ -341,16 +341,22 @@ button:disabled {
 .marker--matched:hover,
 .marker--matched:focus {
   outline: none;
-  transform: scale(1.08);
+}
+
+#location-markers .marker--matched:hover .pin-body,
+#location-markers .marker--matched:focus .pin-body {
+  fill: #FF5A4D;
+  stroke: #111;
+  stroke-width: 3.4px;
 }
 
 .marker--unmatched {
   opacity: 0;
 }
 
-.marker--selected .pin-body {
+#location-markers .marker--selected .pin-body {
   stroke: #C8A84B;
-  stroke-width: 6px;
+  stroke-width: 4.6px;
 }
 
 .match-badge {
@@ -369,17 +375,17 @@ button:disabled {
 
 .location-panel {
   position: fixed;
-  top: 38%;
-  right: 7%;
+  top: 34%;
+  right: 5%;
   z-index: 12;
-  width: 240px;
-  min-height: 130px;
+  width: 310px;
+  min-height: 210px;
   transform: none;
-  padding: 22px 24px;
+  padding: 22px 24px 20px;
   border: 6px solid #9D9D9B;
   border-radius: 12px;
   background: #D9D9D9;
-  box-shadow: none;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.16);
 }
 
 .location-panel .section-label {
@@ -389,24 +395,27 @@ button:disabled {
 .location-panel h2 {
   margin: 8px 24px 6px 0;
   font-family: Archivo, sans-serif;
-  font-size: 20px;
-  line-height: 1.12;
+  font-size: 22px;
+  line-height: 1.14;
 }
 
 .location-meta {
   margin: 0;
-  color: var(--muted);
-  font-size: 14px;
+  color: #333;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .service-list {
-  margin: 14px 0;
+  margin: 16px 0 14px;
   padding-left: 18px;
+  color: #222;
+  font-size: 15px;
   line-height: 1.45;
 }
 
 .tag-row {
-  display: none;
+  display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
