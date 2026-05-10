@@ -32,8 +32,9 @@ export async function initCamera(videoElement, statusEl, badgeEl) {
 
 async function loadModel(statusEl) {
   statusEl.textContent = 'Loading card model...';
-  const modelURL = `${MODEL_URL}model.json`;
-  const metadataURL = `${MODEL_URL}metadata.json`;
+  const baseUrl = MODEL_URL.endsWith('/') ? MODEL_URL : `${MODEL_URL}/`;
+  const modelURL = `${baseUrl}model.json`;
+  const metadataURL = `${baseUrl}metadata.json`;
   model = await tmImage.load(modelURL, metadataURL);
   statusEl.textContent = 'Listening for cards...';
 }
@@ -51,9 +52,16 @@ function startDetectionLoop(statusEl) {
 }
 
 function resolvePredictedCard(className) {
-  const numericPrefix = Number(String(className).split(/[:\s_-]/)[0]);
-  if (Number.isFinite(numericPrefix) && CARD_BY_CLASS_INDEX[numericPrefix]) return CARD_BY_CLASS_INDEX[numericPrefix];
-  return Object.values(CARD_BY_CLASS_INDEX).find((card) => card.id === className || card.label === className);
+  const normalized = String(className).trim().toLowerCase();
+  const numericMatch = normalized.match(/\b(?:class\s*)?(\d{1,2})\b/);
+  if (numericMatch && CARD_BY_CLASS_INDEX[Number(numericMatch[1])]) {
+    return CARD_BY_CLASS_INDEX[Number(numericMatch[1])];
+  }
+  return Object.values(CARD_BY_CLASS_INDEX).find((card) => {
+    const id = card.id.toLowerCase();
+    const label = card.label.toLowerCase();
+    return normalized === id || normalized === label || normalized.includes(id);
+  });
 }
 
 function enableMockMode(statusEl, badgeEl) {
@@ -76,6 +84,7 @@ function acceptCard(card, statusEl) {
   const last = lastAccepted.get(card.id) || 0;
   if (Date.now() - last < DETECTION.debounceMs) return;
   lastAccepted.set(card.id, Date.now());
+  window.dispatchEvent(new CustomEvent('cardDetected', { detail: { card } }));
   if (addCard(card.id)) {
     statusEl.textContent = `${card.label} detected`;
     statusEl.parentElement.classList.add('is-detected');
