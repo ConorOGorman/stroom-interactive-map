@@ -736,6 +736,7 @@ button:disabled {
 .print-card footer {
   margin-top: auto;
   text-transform: none;
+  padding-right: 92px;
 }
 
 .print-card footer span {
@@ -752,6 +753,26 @@ button:disabled {
   background: #1A1A1A;
   color: #FFFFFF;
   font-size: 13px;
+}
+
+.print-card-qr {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  width: 86px;
+  height: 86px;
+  padding: 4px;
+  border: 1px solid #1A1A1A;
+  border-radius: 6px;
+  background: #FFFFFF;
+}
+
+.print-card-qr img,
+.print-card-qr canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .cut-corner {

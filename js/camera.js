@@ -1,10 +1,13 @@
-import { CARD_BY_CLASS_INDEX, CARD_BY_KEY, DETECTION, MODEL_URL } from './config.js';
+import { CARD_BY_CLASS_INDEX, CARD_BY_ID, CARD_BY_KEY, DETECTION, MODEL_URL } from './config.js';
 import { addCard } from './cards.js';
 
 let model = null;
 let videoEl = null;
 let lastAccepted = new Map();
 let mockMode = false;
+let qrDetector = null;
+let qrCanvas = null;
+let qrContext = null;
 
 export async function initCamera(videoElement, statusEl, badgeEl) {
   videoEl = videoElement;
@@ -28,6 +31,7 @@ export async function initCamera(videoElement, statusEl, badgeEl) {
   } else {
     enableMockMode(statusEl, badgeEl);
   }
+  startQrDetectionLoop(statusEl);
 }
 
 async function loadModel(statusEl) {
@@ -49,6 +53,54 @@ function startDetectionLoop(statusEl) {
     const card = resolvePredictedCard(best.className);
     if (card) acceptCard(card, statusEl);
   }, interval);
+}
+
+function startQrDetectionLoop(statusEl) {
+  if (!videoEl) return;
+  try {
+    if ('BarcodeDetector' in window) {
+      qrDetector = new BarcodeDetector({ formats: ['qr_code'] });
+    }
+  } catch (error) {
+    qrDetector = null;
+  }
+
+  qrCanvas = document.createElement('canvas');
+  qrContext = qrCanvas.getContext('2d', { willReadFrequently: true });
+  if (mockMode) statusEl.textContent = 'Show card QR to camera';
+
+  const interval = 1000 / DETECTION.fps;
+  setInterval(async () => {
+    if (!videoEl || videoEl.readyState < 2) return;
+    const card = await detectQrCard();
+    if (card) acceptCard(card, statusEl);
+  }, interval);
+}
+
+async function detectQrCard() {
+  if (qrDetector) {
+    try {
+      const codes = await qrDetector.detect(videoEl);
+      const detected = codes.map((code) => parseQrCard(code.rawValue)).find(Boolean);
+      if (detected) return detected;
+    } catch (error) {
+      qrDetector = null;
+    }
+  }
+
+  if (!window.jsQR || !qrCanvas || !qrContext || !videoEl.videoWidth || !videoEl.videoHeight) return null;
+  qrCanvas.width = videoEl.videoWidth;
+  qrCanvas.height = videoEl.videoHeight;
+  qrContext.drawImage(videoEl, 0, 0, qrCanvas.width, qrCanvas.height);
+  const imageData = qrContext.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+  const code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+  return code ? parseQrCard(code.data) : null;
+}
+
+function parseQrCard(value) {
+  const raw = String(value || '').trim();
+  const id = raw.startsWith('stroom-card:') ? raw.replace('stroom-card:', '') : raw;
+  return CARD_BY_ID[id] || null;
 }
 
 function resolvePredictedCard(className) {
@@ -89,7 +141,7 @@ function acceptCard(card, statusEl) {
     statusEl.textContent = `${card.label} detected`;
     statusEl.parentElement.classList.add('is-detected');
     setTimeout(() => {
-      statusEl.textContent = mockMode ? 'Show Cards on Camera' : 'Listening for cards...';
+      statusEl.textContent = mockMode ? 'Show card QR to camera' : 'Listening for cards...';
       statusEl.parentElement.classList.remove('is-detected');
     }, 1300);
   }

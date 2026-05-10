@@ -42,6 +42,8 @@ Z: No Exp       X: Training    C: Career Change
 
 Open `cards.html` to view and print the 20 physical card designs. The page uses the same card labels and model class names as `js/config.js`.
 
+Each printable card includes a QR marker. The main camera reader can scan that marker immediately, so the prototype works without training a Teachable Machine model. A trained visual model can still be added later by setting `MODEL_URL`.
+
 ## Adding the SVG map
 
 Replace `assets/map.svg` with your Groene Hart SVG. Ensure the SVG has a `viewBox` attribute. The `map.js` file reads the `viewBox` and places markers using normalized 0-100 percent coordinates.

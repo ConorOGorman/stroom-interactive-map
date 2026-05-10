@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   </head>
   <body class="cards-screen">
     <header class="cards-header">
@@ -29,7 +30,7 @@
       <section class="cards-intro">
         <p class="eyebrow">Prototype deck</p>
         <h1>Print-ready detection cards</h1>
-        <p>Use these cards for the pop-up stall demo and for Teachable Machine reference photos. Each card includes the visible visitor label plus the class name used by the model.</p>
+        <p>Use these cards for the pop-up stall demo. Each card includes a visible label, model class name, and camera-readable QR marker.</p>
       </section>
       <div id="printable-cards" class="printable-cards"></div>
     </main>
@@ -103,9 +104,21 @@
               <span>${card.id}</span>
               <strong>${String(card.key).toUpperCase()}</strong>
             </footer>
+            <div class="print-card-qr" data-card-id="${card.id}" aria-label="Detection QR for ${card.label}"></div>
           </article>
         `;
       }
+
+      document.querySelectorAll('.print-card-qr').forEach((qrEl) => {
+        new QRCode(qrEl, {
+          text: `stroom-card:${qrEl.dataset.cardId}`,
+          width: 82,
+          height: 82,
+          colorDark: '#1A1A1A',
+          colorLight: '#FFFFFF',
+          correctLevel: QRCode.CorrectLevel.M,
+        });
+      });
     </script>
   </body>
 </html>
