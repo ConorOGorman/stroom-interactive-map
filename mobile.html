@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Your STROOM Map</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body class="mobile-screen">
+    <main class="mobile-app">
+      <header class="mobile-header">
+        <span class="brand-mark">S</span>
+        <span>Your personal map</span>
+      </header>
+
+      <section class="mobile-section">
+        <p class="eyebrow">Based on what you were looking for</p>
+        <div id="mobile-card-summary" class="mobile-chip-list"></div>
+      </section>
+
+      <section class="mobile-section">
+        <h1>Matched locations</h1>
+        <div id="mobile-locations" class="mobile-locations"></div>
+      </section>
+
+      <section class="mobile-section contact-section" id="contact-section">
+        <h2>Get this sent to you</h2>
+        <form id="contact-form">
+          <label>
+            <span>First name</span>
+            <input name="name" autocomplete="given-name" required>
+          </label>
+          <label>
+            <span>Email address</span>
+            <input name="email" type="email" autocomplete="email" required>
+          </label>
+          <p>Only used to send your map.</p>
+          <button class="primary-button" type="submit">Send me my map</button>
+        </form>
+      </section>
+
+      <section id="success-state" class="success-state" hidden>
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <circle cx="40" cy="40" r="34"></circle>
+          <path d="M24 42 L35 53 L58 28"></path>
+        </svg>
+        <h2>Your map is on its way</h2>
+        <p>Check your inbox soon. It will show exactly where you can get started in the Groene Hart.</p>
+      </section>
+    </main>
+
+    <script type="module">
+      import { CARD_BY_ID } from './js/config.js';
+      import { getMatchedLocations } from './js/locations.js';
+
+      const params = new URLSearchParams(window.location.search);
+      const cards = (params.get('cards') || '').split(',').map((id) => id.trim()).filter(Boolean);
+      const cardSummary = document.getElementById('mobile-card-summary');
+      const locationsEl = document.getElementById('mobile-locations');
+      const matched = getMatchedLocations(cards);
+
+      cardSummary.innerHTML = cards.length
+        ? cards.map((id) => {
+          const card = CARD_BY_ID[id];
+          return card ? `<span class="card-chip"><span class="chip-icon">${card.icon}</span>${card.label}</span>` : '';
+        }).join('')
+        : '<span class="muted-copy">No cards were selected.</span>';
+
+      locationsEl.innerHTML = matched.length
+        ? matched.map((location) => `
+          <article class="mobile-location-card">
+            <h2>${location.name}</h2>
+            <p>${location.town} · ${location.hours}</p>
+            <ul>${location.services.map((service) => `<li>${service}</li>`).join('')}</ul>
+          </article>
+        `).join('')
+        : `<p class="no-match">We'll help you find the right fit — enter your email below and we'll be in touch.</p>`;
+
+      document.getElementById('contact-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const payload = { name: form.get('name'), email: form.get('email'), cards };
+        // TODO: replace with real email API (SendGrid/Mailchimp)
+        console.log('MOCK EMAIL SENT:', payload);
+        document.getElementById('contact-section').hidden = true;
+        document.getElementById('success-state').hidden = false;
+      });
+    </script>
+  </body>
+</html>

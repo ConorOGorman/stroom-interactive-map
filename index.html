@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>STROOMpoint Interactive Map</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  </head>
+  <body class="main-screen">
+    <aside class="control-panel" aria-label="Card detection controls">
+      <div class="brand-lockup">
+        <span class="brand-mark">S</span>
+        <div>
+          <strong>STROOMpoint</strong>
+          <span>Interactive map</span>
+        </div>
+      </div>
+
+      <section class="camera-card">
+        <video id="camera-feed" playsinline muted aria-label="Camera feed"></video>
+        <div class="detection-status" id="detection-status-wrap">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="detection-status">Starting camera...</span>
+        </div>
+      </section>
+
+      <section class="selection-panel">
+        <div class="section-label">Your selection</div>
+        <div id="selected-cards" class="selected-cards" aria-live="polite"></div>
+        <button id="clear-cards" class="link-button" type="button">Clear all</button>
+      </section>
+
+      <div class="panel-actions">
+        <button id="show-map" class="primary-button" type="button" disabled>
+          <span>Show me the map</span>
+          <span aria-hidden="true">-&gt;</span>
+        </button>
+        <button id="get-map" class="secondary-button" type="button" disabled>
+          <span>Get my personal map</span>
+          <span aria-hidden="true">-&gt;</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="map-shell" aria-label="Groene Hart opportunity map">
+      <div id="match-badge" class="match-badge" hidden>0 locations match</div>
+      <div class="table-top" id="table-top">
+        <div id="map-container" class="map-container"></div>
+      </div>
+    </main>
+
+    <aside id="location-panel" class="location-panel" hidden>
+      <button class="icon-button close-location" type="button" aria-label="Close location panel">×</button>
+      <div class="section-label">Opportunity</div>
+      <h2 data-location-name></h2>
+      <p data-location-town class="location-meta"></p>
+      <ul data-location-services class="service-list"></ul>
+      <div data-location-tags class="tag-row"></div>
+    </aside>
+
+    <div id="demo-badge" class="demo-badge" hidden>
+      <strong>DEMO MODE</strong>
+      <span>1-9/0 jobs and personas · Q/W/E roles · A/S/D/F conditions · Z/X/C situations</span>
+    </div>
+
+    <div id="qr-overlay" class="qr-overlay" hidden>
+      <div class="qr-panel" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+        <button id="close-qr" class="icon-button close-qr" type="button" aria-label="Close QR overlay">×</button>
+        <h1 id="qr-title">Scan with your phone</h1>
+        <p>Takes 30 seconds. You'll get your STROOM map by email.</p>
+        <div id="qr-code" class="qr-code"></div>
+        <small data-qr-selection></small>
+      </div>
+    </div>
+
+    <template id="fallback-map-template">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720" role="img" aria-label="Fallback map">
+        <rect width="1000" height="720" fill="#eaeae4"/>
+        <path d="M178 142 C260 54 405 68 493 111 C598 58 724 99 796 181 C891 289 825 432 745 496 C668 579 527 622 405 584 C302 634 179 590 121 503 C55 404 83 250 178 142Z" fill="#cfd8c4" stroke="#4a6642" stroke-width="10"/>
+        <path d="M216 244 C350 190 478 210 586 278 C660 324 727 331 808 302" fill="none" stroke="#8ba6a8" stroke-width="18" stroke-linecap="round" opacity="0.8"/>
+      </svg>
+    </template>
+
+    <script type="module">
+      import { initCamera } from './js/camera.js';
+      import { clearCards, getSelectedCards, removeCard, subscribeToCards } from './js/cards.js';
+      import { initMap, updateMap, closeInfoPanel } from './js/map.js';
+      import { openQrOverlay, closeQrOverlay } from './js/qr.js';
+
+      const selectedCardsEl = document.getElementById('selected-cards');
+      const clearButton = document.getElementById('clear-cards');
+      const showMapButton = document.getElementById('show-map');
+      const getMapButton = document.getElementById('get-map');
+      const locationPanel = document.getElementById('location-panel');
+      const matchBadge = document.getElementById('match-badge');
+      const qrOverlay = document.getElementById('qr-overlay');
+
+      await initMap(document.getElementById('map-container'), locationPanel, matchBadge);
+      await initCamera(
+        document.getElementById('camera-feed'),
+        document.getElementById('detection-status'),
+        document.getElementById('demo-badge')
+      );
+
+      subscribeToCards((cards) => {
+        selectedCardsEl.innerHTML = cards.length
+          ? cards.map((card) => `
+            <div class="selected-chip">
+              <span class="chip-icon">${card.icon}</span>
+              <span>${card.label}</span>
+              <button type="button" aria-label="Remove ${card.label}" data-remove-card="${card.id}">×</button>
+            </div>
+          `).join('')
+          : '<p class="empty-state">Hold up a card or press a demo key.</p>';
+        const hasCards = cards.length > 0;
+        showMapButton.disabled = !hasCards;
+        getMapButton.disabled = !hasCards;
+        updateMap(cards, locationPanel, matchBadge);
+      });
+
+      selectedCardsEl.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-remove-card]');
+        if (button) removeCard(button.dataset.removeCard);
+      });
+      clearButton.addEventListener('click', clearCards);
+      showMapButton.addEventListener('click', () => document.getElementById('table-top').scrollIntoView({ behavior: 'smooth', block: 'center' }));
+      getMapButton.addEventListener('click', () => openQrOverlay(qrOverlay));
+      document.getElementById('close-qr').addEventListener('click', () => closeQrOverlay(qrOverlay));
+      document.querySelector('.close-location').addEventListener('click', () => closeInfoPanel(locationPanel));
+      document.querySelector('.map-shell').addEventListener('click', (event) => {
+        if (event.target.classList.contains('map-shell')) closeInfoPanel(locationPanel);
+      });
+    </script>
+  </body>
+</html>
