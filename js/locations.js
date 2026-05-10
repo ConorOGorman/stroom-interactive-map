@@ -90,14 +90,29 @@ export const locations = Object.entries(jobTemplates).flatMap(([jobId, template]
 
 export function getMatchedLocations(cardIds) {
   const selected = new Set(cardIds);
+  const selectedJobs = [...selected].filter((id) => id.startsWith('job_'));
+  const selectedPersonas = [...selected].filter((id) => id.startsWith('persona_'));
+  const selectedConditions = [...selected].filter((id) => id.startsWith('condition_'));
   return locations
     .map((location) => {
-      const baseMatch = location.relevant_job_types.some((id) => selected.has(id))
-        || location.relevant_personas.some((id) => selected.has(id));
+      const jobMatch = selectedJobs.length === 0 || location.relevant_job_types.some((id) => selected.has(id));
+      const personaMatch = selectedPersonas.length === 0 || location.relevant_personas.some((id) => selected.has(id));
+      const conditionMatch = selectedConditions.length === 0
+        || selectedConditions.every((id) => locationMatchesCondition(location, id));
+      const baseMatch = jobMatch && personaMatch && conditionMatch;
       const conditionScore = location.relevant_conditions.filter((id) => selected.has(id)).length;
+      const jobScore = location.relevant_job_types.filter((id) => selected.has(id)).length;
+      const personaScore = location.relevant_personas.filter((id) => selected.has(id)).length;
       const situationScore = [...selected].filter((id) => id.startsWith('situation_')).length ? 0.25 : 0;
-      return { ...location, matchScore: baseMatch ? 1 + conditionScore + situationScore : 0 };
+      return { ...location, matchScore: baseMatch ? 1 + jobScore + personaScore + conditionScore + situationScore : 0 };
     })
     .filter((location) => location.matchScore > 0)
     .sort((a, b) => b.matchScore - a.matchScore || a.town.localeCompare(b.town));
+}
+
+function locationMatchesCondition(location, conditionId) {
+  if (conditionId === 'condition_fulltime') return location.hours === 'Full-time';
+  if (conditionId === 'condition_parttime') return location.hours === 'Part-time';
+  if (conditionId === 'condition_flexible') return location.hours === 'Flexible';
+  return location.relevant_conditions.includes(conditionId);
 }
