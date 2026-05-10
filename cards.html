@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>STROOMpoint Printable Cards</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body class="cards-screen">
+    <header class="cards-header">
+      <div class="brand-lockup cards-brand">
+        <span class="brand-mark">S</span>
+        <div>
+          <strong>STROOMpoint</strong>
+          <span>Printable card set</span>
+        </div>
+      </div>
+      <div class="cards-actions">
+        <a href="index.html">Back to map</a>
+        <button type="button" onclick="window.print()">Print cards</button>
+      </div>
+    </header>
+
+    <main class="cards-page">
+      <section class="cards-intro">
+        <p class="eyebrow">Prototype deck</p>
+        <h1>Print-ready detection cards</h1>
+        <p>Use these cards for the pop-up stall demo and for Teachable Machine reference photos. Each card includes the visible visitor label plus the class name used by the model.</p>
+      </section>
+      <div id="printable-cards" class="printable-cards"></div>
+    </main>
+
+    <script type="module">
+      import { CARD_CATEGORIES, CARDS } from './js/config.js';
+
+      const categoryOrder = ['persona', 'job', 'condition', 'situation'];
+      const categoryNotes = {
+        persona: 'Who the visitor is',
+        job: 'Work they want to explore',
+        condition: 'How they want work to fit life',
+        situation: 'Where they are starting from',
+      };
+
+      const descriptions = {
+        job_plumber: 'Practical installation and repair work',
+        job_electrician: 'Electrical systems, safety, and maintenance',
+        job_carpenter: 'Building, renovation, and hands-on craft',
+        job_catering: 'Kitchen, service, and hospitality roles',
+        job_healthcare: 'Care, support, and people-focused work',
+        job_it: 'Digital support, systems, and technology',
+        job_admin: 'Planning, records, and office coordination',
+        job_driver: 'Transport, delivery, and logistics',
+        condition_flexible: 'Shifts that can adapt around life',
+        condition_parttime: 'Fewer hours or a gradual start',
+        condition_fulltime: 'A stable full working week',
+        condition_remote: 'Opportunities close to home',
+      };
+
+      const iconShapes = {
+        persona: 'person',
+        job: 'tool',
+        condition: 'clock',
+        situation: 'spark',
+      };
+
+      const container = document.getElementById('printable-cards');
+
+      container.innerHTML = categoryOrder.map((category) => {
+        const cards = CARDS.filter((card) => card.category === category);
+        return `
+          <section class="card-category">
+            <div class="card-category-heading">
+              <span>${CARD_CATEGORIES[category]}</span>
+              <small>${categoryNotes[category]}</small>
+            </div>
+            <div class="card-grid">
+              ${cards.map((card) => renderCard(card, iconShapes[category])).join('')}
+            </div>
+          </section>
+        `;
+      }).join('');
+
+      function renderCard(card, shape) {
+        const description = card.description || descriptions[card.id] || 'Explore matching STROOM opportunities';
+        return `
+          <article class="print-card print-card--${card.category}">
+            <div class="cut-corner cut-corner--tl"></div>
+            <div class="cut-corner cut-corner--tr"></div>
+            <div class="print-card-topline">
+              <span>${CARD_CATEGORIES[card.category]}</span>
+              <span>Class ${card.classIndex}</span>
+            </div>
+            <div class="print-card-icon print-card-icon--${shape}">
+              <span>${card.icon}</span>
+            </div>
+            <h2>${card.label}</h2>
+            <p>${description}</p>
+            <footer>
+              <span>${card.id}</span>
+              <strong>${String(card.key).toUpperCase()}</strong>
+            </footer>
+          </article>
+        `;
+      }
+    </script>
+  </body>
+</html>

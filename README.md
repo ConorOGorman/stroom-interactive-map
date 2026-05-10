@@ -38,6 +38,10 @@ A: Flexible     S: Part-time   D: Full-time     F: Near Home
 Z: No Exp       X: Training    C: Career Change
 ```
 
+## Printable cards
+
+Open `cards.html` to view and print the 20 physical card designs. The page uses the same card labels and model class names as `js/config.js`.
+
 ## Adding the SVG map
 
 Replace `assets/map.svg` with your Groene Hart SVG. Ensure the SVG has a `viewBox` attribute. The `map.js` file reads the `viewBox` and places markers using normalized 0-100 percent coordinates.
