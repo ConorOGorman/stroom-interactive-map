@@ -6,4 +6,5 @@ node_modules/
 .env.local
 .playwright-mcp/
 firmware/*.local.py
+firmware/reader.py
 .env*.local
