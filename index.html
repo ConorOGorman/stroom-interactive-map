@@ -278,7 +278,8 @@
           connectBtn.classList.remove('is-connected');
           connectBtn.disabled = false;
         } else if (status === 'unsupported') {
-          trayControls.hidden = true;
+          connectBtn.hidden = true;
+          statusText.textContent = 'Use Connect Web';
         } else if (status === 'error') {
           trayControls.hidden = false;
           wifiForm.hidden = true;
