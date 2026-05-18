@@ -2,7 +2,6 @@ import { addCard, getSelectedCardIds, removeCard } from './cards.js';
 import { CARD_BY_ID, CARD_BY_KEY, CARD_BY_CLASS_INDEX, DETECTION } from './config.js';
 
 let port = null;
-let wsSocket = null;
 let relayPollTimer = null;
 const debounce = new Map();
 
@@ -96,52 +95,6 @@ function processCardId(rawId) {
   if (debounce.has(card.id) && now - debounce.get(card.id) < DETECTION.debounceMs) return false;
   debounce.set(card.id, now);
   return addCard(card.id);
-}
-
-export function connectWifi(ip, onStatus) {
-  if (wsSocket) {
-    wsSocket.close();
-    wsSocket = null;
-  }
-  const url = `ws://${ip}:81`;
-  try {
-    wsSocket = new WebSocket(url);
-  } catch {
-    onStatus('error');
-    return;
-  }
-
-  const timeout = setTimeout(() => {
-    if (wsSocket && wsSocket.readyState !== WebSocket.OPEN) {
-      wsSocket.close();
-      onStatus('error');
-    }
-  }, 6000);
-
-  wsSocket.addEventListener('open', () => {
-    clearTimeout(timeout);
-    onStatus('connected');
-  });
-
-  wsSocket.addEventListener('message', (e) => {
-    const msg = String(e.data).trim();
-    if (msg.startsWith('CARD:')) {
-      const added = processCardId(msg.slice(5));
-      if (added) onStatus('scanned');
-    }
-  });
-
-  wsSocket.addEventListener('close', () => {
-    clearTimeout(timeout);
-    wsSocket = null;
-    onStatus('disconnected');
-  });
-
-  wsSocket.addEventListener('error', () => {
-    clearTimeout(timeout);
-    wsSocket = null;
-    onStatus('error');
-  });
 }
 
 export function connectCloudRelay(onStatus, session = 'default') {

@@ -257,13 +257,11 @@
           statusText.textContent = 'Reader connected';
           connectBtn.classList.add('is-connected');
           trayControls.hidden = true;
-          wifiForm.hidden = true;
           updateTrayVisibility([]);
         } else if (status === 'relay-connected') {
           readerConnected = false;
           rfidTray.hidden = false;
           trayControls.hidden = true;
-          wifiForm.hidden = true;
         } else if (status === 'scanned') {
           statusText.textContent = 'Card scanned';
         } else if (status === 'disconnected') {
