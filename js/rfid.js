@@ -153,7 +153,7 @@ export function connectCloudRelay(onStatus, session = 'default') {
   let lastSeen = Date.now() - 5000;
   let stopped = false;
 
-  onStatus('connected');
+  onStatus('relay-connected');
 
   async function poll() {
     if (stopped) return;

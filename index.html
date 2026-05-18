@@ -265,6 +265,15 @@
           trayControls.hidden = true;
           wifiForm.hidden = true;
           updateTrayVisibility([]);
+        } else if (status === 'relay-connected') {
+          readerConnected = false;
+          rfidTray.hidden = false;
+          trayControls.hidden = false;
+          wifiForm.hidden = true;
+          statusDot.classList.add('is-connected');
+          statusText.textContent = 'Web connected';
+          cloudBtn.textContent = 'Web connected';
+          cloudBtn.disabled = true;
         } else if (status === 'scanned') {
           statusText.textContent = 'Card scanned';
         } else if (status === 'disconnected') {
