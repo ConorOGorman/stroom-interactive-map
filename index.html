@@ -129,13 +129,7 @@
         <span class="rfid-status-text" id="rfid-status">Not connected</span>
         <button class="rfid-connect-btn" id="rfid-connect-btn">Connect Reader</button>
         <button class="rfid-cloud-btn" id="rfid-cloud-btn">Connect Web</button>
-        <button class="rfid-wifi-btn" id="rfid-wifi-btn">Connect via WiFi</button>
       </div>
-      <form class="rfid-wifi-form" id="rfid-wifi-form" hidden novalidate>
-        <input class="rfid-wifi-input" id="rfid-wifi-ip" type="text" placeholder="192.168.x.x" autocomplete="off" inputmode="decimal">
-        <button type="submit" class="rfid-connect-btn">Connect</button>
-        <button type="button" class="rfid-wifi-cancel" id="rfid-wifi-cancel">Cancel</button>
-      </form>
     </div>
 
     <main class="map-shell" aria-label="Groene Hart opportunity map">
@@ -146,7 +140,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
-      import { initRFID, connectReader, connectWifi, connectCloudRelay, isRFIDSupported } from './js/rfid.js';
+      import { initRFID, connectReader, connectCloudRelay, isRFIDSupported } from './js/rfid.js';
       import { subscribeToCards, removeCard } from './js/cards.js';
       import { initMap, updateMap, closeInfoPanel } from './js/map.js';
       import { getMatchedLocations } from './js/locations.js';
@@ -268,19 +262,14 @@
         } else if (status === 'relay-connected') {
           readerConnected = false;
           rfidTray.hidden = false;
-          trayControls.hidden = false;
+          trayControls.hidden = true;
           wifiForm.hidden = true;
-          statusDot.classList.add('is-connected');
-          statusText.textContent = 'Web connected';
-          cloudBtn.textContent = 'Web connected';
-          cloudBtn.disabled = true;
         } else if (status === 'scanned') {
           statusText.textContent = 'Card scanned';
         } else if (status === 'disconnected') {
           readerConnected = false;
           rfidTray.hidden = false;
           trayControls.hidden = false;
-          wifiForm.hidden = true;
           statusDot.classList.remove('is-connected');
           statusText.textContent = 'Reader disconnected';
           connectBtn.textContent = 'Reconnect';
@@ -291,7 +280,6 @@
           statusText.textContent = 'Use Connect Web';
         } else if (status === 'error') {
           trayControls.hidden = false;
-          wifiForm.hidden = true;
           statusText.textContent = 'Connection failed — try again';
         }
       }
@@ -301,29 +289,7 @@
       connectBtn.addEventListener('click', () => connectReader(onStatus));
       cloudBtn.addEventListener('click', () => connectCloudRelay(onStatus));
 
-      const wifiBtn = document.getElementById('rfid-wifi-btn');
-      const wifiForm = document.getElementById('rfid-wifi-form');
-      const wifiIpInput = document.getElementById('rfid-wifi-ip');
-      const wifiCancel = document.getElementById('rfid-wifi-cancel');
 
-      wifiBtn.addEventListener('click', () => {
-        trayControls.hidden = true;
-        wifiForm.hidden = false;
-        wifiIpInput.focus();
-      });
-
-      wifiCancel.addEventListener('click', () => {
-        wifiForm.hidden = true;
-        trayControls.hidden = false;
-      });
-
-      wifiForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const ip = wifiIpInput.value.trim();
-        if (!ip) return;
-        wifiForm.hidden = true;
-        connectWifi(ip, onStatus);
-      });
 
       initRFID();
     </script>

@@ -149,7 +149,13 @@ function openInfoPanel(location, panel) {
   hoursBadge.textContent = location.hours;
   hoursBadge.dataset.hours = location.hours.toLowerCase().replace('-', '');
   panel.querySelector('[data-location-description]').textContent = location.description;
-  panel.querySelector('[data-location-services]').innerHTML = location.services.map((s) => `<li>${s}</li>`).join('');
+  const servicesList = panel.querySelector('[data-location-services]');
+  servicesList.textContent = '';
+  location.services.forEach(s => {
+    const li = document.createElement('li');
+    li.textContent = s;
+    servicesList.appendChild(li);
+  });
 
   const allRelevant = new Set([
     ...location.relevant_job_types,
@@ -157,13 +163,16 @@ function openInfoPanel(location, panel) {
     ...location.relevant_conditions,
   ]);
   const matched = currentCardIds.filter((id) => allRelevant.has(id));
-  panel.querySelector('[data-location-tags]').innerHTML = matched
-    .map((id) => {
-      const card = CARD_BY_ID[id];
-      if (!card) return '';
-      return `<span class="tag-chip tag-chip--${card.category}">${card.label}</span>`;
-    })
-    .join('');
+  const tagsContainer = panel.querySelector('[data-location-tags]');
+  tagsContainer.textContent = '';
+  matched.forEach((id) => {
+    const card = CARD_BY_ID[id];
+    if (!card) return;
+    const span = document.createElement('span');
+    span.className = `tag-chip tag-chip--${card.category}`;
+    span.textContent = card.label;
+    tagsContainer.appendChild(span);
+  });
 }
 
 export function closeInfoPanel(panel) {

@@ -26,11 +26,12 @@ async function handleGet(req, res) {
 }
 
 async function handlePost(req, res) {
-  if (process.env.RELAY_SECRET) {
-    const secret = req.headers['x-reader-secret'];
-    if (secret !== process.env.RELAY_SECRET) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+  if (!process.env.RELAY_SECRET) {
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+  const secret = req.headers['x-reader-secret'];
+  if (secret !== process.env.RELAY_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
@@ -126,5 +127,5 @@ function cleanSession(value) {
 }
 
 function cleanCardId(value) {
-  return String(value || '').trim().slice(0, 40);
+  return String(value || '').trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
 }

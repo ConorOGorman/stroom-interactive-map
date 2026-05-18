@@ -165,18 +165,6 @@ button:disabled {
   color: #3a3a3a;
 }
 
-.rfid-wifi-btn {
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid rgba(7, 124, 179, 0.28);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.94);
-  color: #055E88;
-  font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 8px 22px rgba(20, 54, 68, 0.18);
-}
-
 .rfid-cloud-btn {
   height: 34px;
   padding: 0 14px;
@@ -197,52 +185,7 @@ button:disabled {
   outline: none;
 }
 
-.rfid-wifi-btn:hover,
-.rfid-wifi-btn:focus-visible {
-  background: #077CB3;
-  border-color: #077CB3;
-  color: #fff;
-  outline: none;
-}
 
-.rfid-wifi-form {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.rfid-wifi-input {
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.4);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 500;
-  width: 140px;
-  outline: none;
-}
-
-.rfid-wifi-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.rfid-wifi-input:focus {
-  border-color: rgba(255, 255, 255, 0.7);
-}
-
-.rfid-wifi-cancel {
-  height: 34px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-}
 
 @media (max-width: 720px) {
   .main-screen {
@@ -298,27 +241,11 @@ button:disabled {
   }
 
   .rfid-connect-btn,
-  .rfid-cloud-btn,
-  .rfid-wifi-btn {
+  .rfid-cloud-btn {
     grid-column: 1 / -1;
     width: 100%;
     min-width: 0;
     justify-content: center;
-  }
-
-  .rfid-wifi-form {
-    display: grid;
-    grid-template-columns: 1fr;
-    width: 100%;
-    padding: 8px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.72);
-  }
-
-  .rfid-wifi-input,
-  .rfid-wifi-form .rfid-connect-btn,
-  .rfid-wifi-cancel {
-    width: 100%;
   }
 
   .map-container {
