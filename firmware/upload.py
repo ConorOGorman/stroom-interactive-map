@@ -67,7 +67,7 @@ def upload(local_path, remote_name):
 
 
 if __name__ == '__main__':
-    src = sys.argv[1] if len(sys.argv) > 1 else 'firmware/multi_writer.py'
-    dst = sys.argv[2] if len(sys.argv) > 2 else 'stroom_writer.py'
+    src = sys.argv[1] if len(sys.argv) > 1 else 'firmware/reader.py'
+    dst = sys.argv[2] if len(sys.argv) > 2 else 'stroom_reader.py'
     print(f'Uploading {src} → /flash/apps/{dst}')
     upload(src, dst)

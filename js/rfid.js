@@ -98,6 +98,10 @@ function processCardId(rawId) {
 }
 
 export function connectWifi(ip, onStatus) {
+  if (wsSocket) {
+    wsSocket.close();
+    wsSocket = null;
+  }
   const url = `ws://${ip}:81`;
   try {
     wsSocket = new WebSocket(url);
@@ -120,7 +124,10 @@ export function connectWifi(ip, onStatus) {
 
   wsSocket.addEventListener('message', (e) => {
     const msg = String(e.data).trim();
-    if (msg.startsWith('CARD:')) processCardId(msg.slice(5));
+    if (msg.startsWith('CARD:')) {
+      const added = processCardId(msg.slice(5));
+      if (added) onStatus('scanned');
+    }
   });
 
   wsSocket.addEventListener('close', () => {

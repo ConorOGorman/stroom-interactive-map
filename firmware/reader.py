@@ -13,8 +13,10 @@ import hashlib
 import ubinascii  # pyrefly: ignore
 
 # ── WiFi config ───────────────────────────────────────────────────────────────
-WIFI_SSID     = 'YourNetwork'
-WIFI_PASSWORD = 'YourPassword'
+# Change these before uploading to the M5Stack. Use a private router or hotspot
+# if venue WiFi blocks device-to-device traffic.
+WIFI_SSID     = 'CHANGE_ME_WIFI_NAME'
+WIFI_PASSWORD = 'CHANGE_ME_WIFI_PASSWORD'
 WS_PORT       = 81
 # ─────────────────────────────────────────────────────────────────────────────
 
