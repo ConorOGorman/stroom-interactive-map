@@ -1,84 +1,55 @@
 # STROOMpoint RFID Firmware
 
-## WiFi Reader
+Three standalone scripts for the M5Stack CoreS3. UIFlow2 is the default boot screen — select a script from App Run.
 
-`reader.py` is the active reader app. It reads RFID block `4` and sends scans in the browser format:
-
-```text
-CARD:07
-```
-
-It outputs the same message over USB serial and over a WebSocket server:
-
-```text
-ws://<m5stack-ip>:81
-```
-
-For the deployed website, it can also post scans to the cloud relay:
-
-```text
-https://<your-vercel-site>/api/scans
-```
+| Script | Device path | Purpose |
+|---|---|---|
+| `reader.py` | `/flash/apps/stroom_reader.py` | Reads cards, outputs `CARD:<id>` over USB serial + WiFi WebSocket + cloud relay |
+| `write.py` | `/flash/apps/stroom_write.py` | Sequential writer — tap RFID cards 1–20 in order |
+| `diagnose.py` | `/flash/apps/stroom_diag.py` | Write `07` to a card then re-tap to verify the read-back |
+| `upload.py` | — | Upload helper (run on host, not device) |
 
 ## Setup
 
-1. Open `firmware/reader.py`.
-2. Change:
+### 1. WiFi and cloud relay (reader only)
+
+Open `firmware/reader.py` and set:
 
 ```python
-WIFI_SSID     = 'CHANGE_ME_WIFI_NAME'
-WIFI_PASSWORD = 'CHANGE_ME_WIFI_PASSWORD'
-CLOUD_RELAY_URL = 'https://stroom-interactive-map.vercel.app/api/scans'
-CLOUD_RELAY_SECRET = 'CHANGE_ME_RELAY_SECRET'
-CLOUD_RELAY_SESSION = 'default'
+WIFI_SSID     = 'your-wifi-name'
+WIFI_PASSWORD = 'your-wifi-password'
+CLOUD_SECRET  = 'your-relay-secret'   # must match RELAY_SECRET env var on Vercel
 ```
 
-3. In Vercel, add an Upstash Redis integration and set these environment variables:
+### 2. Upload to device
 
-```text
-UPSTASH_REDIS_REST_URL
-UPSTASH_REDIS_REST_TOKEN
-RELAY_SECRET
-```
-
-The Vercel Upstash Marketplace integration may create `KV_REST_API_URL` and `KV_REST_API_TOKEN` instead. The API supports both.
-
-`RELAY_SECRET` must match `CLOUD_RELAY_SECRET` in the firmware.
-
-4. Connect the M5Stack by USB.
-5. Upload the reader:
+Connect M5Stack via USB, then:
 
 ```sh
-python3 firmware/upload.py firmware/reader.py stroom_reader.py
+python3 firmware/upload.py firmware/reader.py   stroom_reader.py
+python3 firmware/upload.py firmware/write.py    stroom_write.py
+python3 firmware/upload.py firmware/diagnose.py stroom_diag.py
 ```
 
-If macOS assigns a different serial port, list ports and pass the port as the third argument:
+If macOS assigns a different port:
 
 ```sh
 python3 -m serial.tools.list_ports
 python3 firmware/upload.py firmware/reader.py stroom_reader.py /dev/cu.G9
 ```
 
-6. Run `stroom_reader.py` from the M5Stack app list.
-7. On the deployed website, click **Connect Web**. A phone, tablet, or laptop can now receive scans from the relay.
-8. For local WebSocket testing, read the IP shown on the M5Stack screen and click **Connect via WiFi**. Enter only the IP, for example:
+### 3. Vercel environment variables (cloud relay)
 
 ```text
-192.168.1.42
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
+RELAY_SECRET=...
 ```
 
-The browser adds `ws://` and `:81` automatically.
+The Upstash Marketplace integration may use `KV_REST_API_URL` / `KV_REST_API_TOKEN` instead — both naming schemes are supported.
 
-## Network Notes
+## Network notes
 
-- The kiosk browser and M5Stack must be on the same WiFi network.
-- Guest/event WiFi often blocks local device traffic. Use a phone hotspot or private router if connection fails.
-- `ws://` works from local development and HTTP pages. The deployed HTTPS site should use **Connect Web** instead, because browsers block plain local WebSockets from HTTPS pages.
-
-## Card Writer
-
-`multi_writer.py` writes compact numeric class indexes to tags. These match `classIndex` in `js/config.js`.
-
-```sh
-python3 firmware/upload.py firmware/multi_writer.py stroom_writer.py
-```
+- The cloud relay (`Connect Web` button) works from any network — no local access required.
+- The WiFi WebSocket (`ws://<ip>:81`) requires the browser and M5Stack to be on the same network.
+- The HTTPS production site must use `Connect Web` — browsers block plain `ws://` from HTTPS pages.

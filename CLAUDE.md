@@ -97,10 +97,10 @@ The Vercel Marketplace Upstash integration may provide `KV_REST_API_URL` and `KV
 | `js/rfid.js` | Keyboard mock mode, Web Serial RFID, cloud relay polling, WiFi/WebSocket RFID input, fullscreen shortcuts |
 | `js/locations.js` | Mock opportunity data, town coordinates, matching rules |
 | `js/map.js` | Leaflet initialization, tile layer, GeoJSON outline, markers, location panel |
-| `firmware/multi_writer.py` | Current RFID card writer using numeric class indexes |
-| `firmware/reader.py` | M5Stack RFID reader outputting `CARD:<value>` over USB serial |
-| `firmware/upload.py` | Upload helper for M5Stack app files |
-| `firmware/stroom_diag.py` | RFID diagnostic script |
+| `firmware/reader.py` | M5Stack RFID reader — USB serial + WiFi WebSocket + cloud relay |
+| `firmware/write.py` | Sequential RFID card writer (class indexes 01–20) |
+| `firmware/diagnose.py` | RFID write+verify diagnostic |
+| `firmware/upload.py` | Upload helper — flashes scripts to `/flash/apps/` on device |
 
 ## Current Card/Input Model
 

@@ -25,10 +25,11 @@ def upload(local_path, remote_name, port):
     remote_path = '/flash/apps/' + remote_name
 
     with serial.Serial(port, BAUD, timeout=1) as ser:
-        # Hard interrupt
-        for _ in range(3):
+        # Hard interrupt — UIFlow needs several Ctrl+C to stop its event loop
+        time.sleep(0.5)
+        for _ in range(5):
             ser.write(b'\r\x03')
-            time.sleep(0.2)
+            time.sleep(0.3)
 
         # Enter raw REPL
         ser.write(b'\x01')

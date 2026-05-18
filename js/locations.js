@@ -77,8 +77,34 @@ const jobTemplates = {
   },
 };
 
-// Each job type gets a compass-point offset so professions fan out around each town
-// without turning into a tight pin flower. Boundary towns use smaller spread values.
+const situationTemplates = {
+  situation_training: {
+    service: 'Training Centre',
+    description: 'The Groene Hart has a strong network of vocational training centres offering practical courses across trades, care, digital and more. Whether you\'re starting fresh or upskilling, there\'s a funded or part-funded route into work that fits around your life.',
+    names: ['Groene Hart ROC', 'Midden Holland Skills', 'Alphense Leerweg', 'Polder Academy', 'Rhine Valley Skills', 'VocaTech', 'Learnpoint', 'Open Leren', 'WorkPath'],
+    services: ['Vocational course finder', 'Funded training routes', 'Skills assessment'],
+    personas: ['persona_job_seeker', 'persona_student', 'persona_returning'],
+    conditions: ['condition_parttime', 'condition_flexible'],
+  },
+  situation_no_experience: {
+    service: 'Entry Programme',
+    description: 'No experience? No problem. Across the Groene Hart, employers and training providers offer entry-level programmes designed for people starting from scratch — with on-the-job learning, coaching, and a clear path to a recognised qualification.',
+    names: ['Kickstart', 'First Step', 'Groene Hart Starters', 'Open Doors', 'New Beginnings', 'Start Here', 'Entry Point', 'Step In', 'First Works'],
+    services: ['Work experience placement', 'Starter coaching', 'Entry-level job matching'],
+    personas: ['persona_job_seeker', 'persona_student', 'persona_returning'],
+    conditions: ['condition_parttime', 'condition_flexible', 'condition_fulltime'],
+  },
+  situation_change: {
+    service: 'Career Transition',
+    description: 'Changing careers takes support — and the Groene Hart has it. From one-to-one career coaching to funded retraining programmes and sector taster days, there are clear routes into a new field without starting from zero.',
+    names: ['Pivot Point', 'New Direction', 'Career Switch', 'Rhine Relaunch', 'Polder Pivot', 'Transition Hub', 'Fresh Path', 'Switch Works', 'Career Forward'],
+    services: ['Career coaching', 'Retraining programme', 'Sector taster days'],
+    personas: ['persona_professional', 'persona_returning', 'persona_job_seeker'],
+    conditions: ['condition_parttime', 'condition_flexible', 'condition_fulltime'],
+  },
+};
+
+// Compass-point offsets so job pins fan out around each town
 const jobSpread = [
   [ 0.021,  0.000],  // N
   [ 0.014,  0.026],  // NE
@@ -90,7 +116,14 @@ const jobSpread = [
   [ 0.014, -0.026],  // NW
 ];
 
-export const locations = Object.entries(jobTemplates).flatMap(([jobId, template], jobIndex) =>
+// Tighter offsets so situation pins sit inside the job ring
+const situationSpread = [
+  [ 0.009,  0.012],
+  [-0.009,  0.012],
+  [ 0.000, -0.014],
+];
+
+const jobLocations = Object.entries(jobTemplates).flatMap(([jobId, template], jobIndex) =>
   towns.map((town, townIndex) => {
     const [dLat, dLng] = jobSpread[jobIndex] ?? [0, 0];
     return {
@@ -99,19 +132,46 @@ export const locations = Object.entries(jobTemplates).flatMap(([jobId, template]
       town: town.name,
       lat: town.lat + (dLat * town.spread),
       lng: town.lng + (dLng * town.spread),
-    description: template.description,
-    services: template.services,
-    hours: template.conditions[townIndex % template.conditions.length] === 'condition_parttime'
-      ? 'Part-time'
-      : template.conditions[townIndex % template.conditions.length] === 'condition_flexible'
-        ? 'Flexible'
-        : 'Full-time',
-    relevant_job_types: [jobId],
-    relevant_personas: template.personas,
-    relevant_conditions: template.conditions,
+      description: template.description,
+      services: template.services,
+      hours: template.conditions[townIndex % template.conditions.length] === 'condition_parttime'
+        ? 'Part-time'
+        : template.conditions[townIndex % template.conditions.length] === 'condition_flexible'
+          ? 'Flexible'
+          : 'Full-time',
+      relevant_job_types: [jobId],
+      relevant_personas: template.personas,
+      relevant_conditions: template.conditions,
+      relevant_situations: [],
     };
   })
 );
+
+const situationLocations = Object.entries(situationTemplates).flatMap(([sitId, template], sitIndex) =>
+  towns.map((town, townIndex) => {
+    const [dLat, dLng] = situationSpread[sitIndex] ?? [0, 0];
+    return {
+      id: `${sitId}_${townIndex + 1}`,
+      name: `${template.names[townIndex]} ${template.service}`,
+      town: town.name,
+      lat: town.lat + (dLat * town.spread),
+      lng: town.lng + (dLng * town.spread),
+      description: template.description,
+      services: template.services,
+      hours: template.conditions[townIndex % template.conditions.length] === 'condition_parttime'
+        ? 'Part-time'
+        : template.conditions[townIndex % template.conditions.length] === 'condition_flexible'
+          ? 'Flexible'
+          : 'Full-time',
+      relevant_job_types: [],
+      relevant_personas: template.personas,
+      relevant_conditions: template.conditions,
+      relevant_situations: [sitId],
+    };
+  })
+);
+
+export const locations = [...jobLocations, ...situationLocations];
 
 export function getMatchedLocations(cardIds) {
   if (cardIds.length === 0) return [];
@@ -119,10 +179,25 @@ export function getMatchedLocations(cardIds) {
   const selectedJobs = [...selected].filter((id) => id.startsWith('job_'));
   const selectedPersonas = [...selected].filter((id) => id.startsWith('persona_'));
   const selectedConditions = [...selected].filter((id) => id.startsWith('condition_'));
-  const hasLocationDrivingCard = selectedJobs.length > 0 || selectedConditions.length > 0;
-  if (!hasLocationDrivingCard) return [];
+  const selectedSituations = [...selected].filter((id) => id.startsWith('situation_'));
+
+  const hasJobOrCondition = selectedJobs.length > 0 || selectedConditions.length > 0 || selectedPersonas.length > 0;
+  const hasSituation = selectedSituations.length > 0;
+  if (!hasJobOrCondition && !hasSituation) return [];
+
   return locations
     .map((location) => {
+      const isSituationLocation = location.relevant_situations.length > 0;
+
+      if (isSituationLocation) {
+        const sitMatch = location.relevant_situations.some((id) => selected.has(id));
+        if (!sitMatch) return { ...location, matchScore: 0 };
+        const personaScore = location.relevant_personas.filter((id) => selected.has(id)).length;
+        const conditionScore = location.relevant_conditions.filter((id) => selected.has(id)).length;
+        return { ...location, matchScore: 1 + personaScore + conditionScore };
+      }
+
+      if (!hasJobOrCondition) return { ...location, matchScore: 0 };
       const jobMatch = selectedJobs.length === 0 || location.relevant_job_types.some((id) => selected.has(id));
       const personaMatch = selectedPersonas.length === 0 || location.relevant_personas.some((id) => selected.has(id));
       const conditionMatch = selectedConditions.length === 0
@@ -131,7 +206,7 @@ export function getMatchedLocations(cardIds) {
       const conditionScore = location.relevant_conditions.filter((id) => selected.has(id)).length;
       const jobScore = location.relevant_job_types.filter((id) => selected.has(id)).length;
       const personaScore = location.relevant_personas.filter((id) => selected.has(id)).length;
-      const situationScore = [...selected].filter((id) => id.startsWith('situation_')).length ? 0.25 : 0;
+      const situationScore = hasSituation ? 0.25 : 0;
       return { ...location, matchScore: baseMatch ? 1 + jobScore + personaScore + conditionScore + situationScore : 0 };
     })
     .filter((location) => location.matchScore > 0)
