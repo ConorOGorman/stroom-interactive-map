@@ -258,118 +258,230 @@ elif choice == 1:
         (20, 'Changing Career'),
     ]
 
-    PAGE = 4
-    page_idx = 0
-
-    def draw_writer(sel, offset):
+    # ── Mode select ───────────────────────────────────────────────────────────
+    def draw_writer_menu():
         Lcd.clear(0x111E1A)
-        Lcd.setTextColor(0x00FF88, 0x111E1A)
-        Lcd.setTextSize(1)
-        Lcd.setCursor(10, 6)
-        Lcd.print('Write Cards — tap to select, tap again to write')
-        Lcd.setTextColor(0x88AA88, 0x111E1A)
-        Lcd.setCursor(270, 6)
-        pg = str(offset // PAGE + 1) + '/' + str((len(CARDS) + PAGE - 1) // PAGE)
-        Lcd.print(pg)
-        for i in range(PAGE):
-            idx = offset + i
-            if idx >= len(CARDS): break
-            num, label = CARDS[idx]
-            y = 28 + i * 50
-            bg = 0x1565A8 if sel == idx else 0x222E2A
-            Lcd.fillRect(8, y, 304, 44, bg)
-            Lcd.setTextColor(0xFFFFFF, bg)
-            Lcd.setTextSize(1)
-            Lcd.setCursor(14, y + 6)
-            Lcd.print(str(num).zfill(2) + '  ' + label)
-
-    def writer_prompt(label):
-        Lcd.clear(0x111E1A)
-        Lcd.setTextColor(0x00FF88, 0x111E1A)
-        Lcd.setTextSize(2)
-        Lcd.setCursor(10, 20)
-        Lcd.print('Tap card to write:')
         Lcd.setTextColor(0xFFFFFF, 0x111E1A)
-        Lcd.setCursor(10, 60)
-        Lcd.print(label)
+        Lcd.setTextSize(2)
+        Lcd.setCursor(10, 10)
+        Lcd.print('Write Cards')
         Lcd.setTextSize(1)
-        Lcd.setTextColor(0x888888, 0x111E1A)
-        Lcd.setCursor(10, 200)
-        Lcd.print('Tap anywhere to cancel')
+        Lcd.setTextColor(0x88AA88, 0x111E1A)
+        Lcd.setCursor(10, 40)
+        Lcd.print('Choose a mode:')
+        Lcd.fillRect(10, 65,  300, 60, 0x1565A8)
+        Lcd.setTextColor(0xFFFFFF, 0x1565A8)
+        Lcd.setTextSize(2)
+        Lcd.setCursor(20, 78)
+        Lcd.print('Sequential')
+        Lcd.setTextSize(1)
+        Lcd.setTextColor(0xAADDFF, 0x1565A8)
+        Lcd.setCursor(20, 100)
+        Lcd.print('Write all 20 in order, 1 -> 20')
+        Lcd.fillRect(10, 140, 300, 60, 0x1A6B1A)
+        Lcd.setTextColor(0xFFFFFF, 0x1A6B1A)
+        Lcd.setTextSize(2)
+        Lcd.setCursor(20, 153)
+        Lcd.print('Pick One')
+        Lcd.setTextSize(1)
+        Lcd.setTextColor(0xAAFFAA, 0x1A6B1A)
+        Lcd.setCursor(20, 175)
+        Lcd.print('Choose any card from the list')
 
-    selected = -1
-    draw_writer(selected, page_idx * PAGE)
-
-    while True:
+    draw_writer_menu()
+    writer_mode = None
+    while writer_mode is None:
         M5.update()
-
         if Touch.getCount() > 0:
-            t = Touch.getDetail(0)
-            tx, ty = t.x, t.y
+            ty = Touch.getDetail(0).y
             time.sleep_ms(120)
+            if 65 <= ty < 125:
+                writer_mode = 'seq'
+            elif 140 <= ty < 200:
+                writer_mode = 'pick'
+        time.sleep_ms(30)
 
-            if selected == -1:
-                # Navigation row at bottom
-                if ty > 210:
-                    if tx < 160 and page_idx > 0:
-                        page_idx -= 1
-                        draw_writer(-1, page_idx * PAGE)
-                    elif tx >= 160 and (page_idx + 1) * PAGE < len(CARDS):
-                        page_idx += 1
-                        draw_writer(-1, page_idx * PAGE)
-                    continue
+    # ── Shared write helper ────────────────────────────────────────────────────
+    def write_card(num, label):
+        payload = str(num).zfill(2).encode().ljust(16, b'\x00')
+        try:
+            rdr.write(BLOCK, payload)
+            Lcd.clear(0x003300)
+            Lcd.setTextColor(0x00FF88, 0x003300)
+            Lcd.setTextSize(2)
+            Lcd.setCursor(10, 30)
+            Lcd.print('Written!')
+            Lcd.setTextSize(1)
+            Lcd.setTextColor(0xFFFFFF, 0x003300)
+            Lcd.setCursor(10, 70)
+            Lcd.print(str(num).zfill(2) + ' — ' + label)
+            Lcd.setCursor(10, 100)
+            Lcd.print('Remove card...')
+            return True
+        except Exception as e:
+            Lcd.clear(0x330000)
+            Lcd.setTextColor(0xFF4444, 0x330000)
+            Lcd.setTextSize(2)
+            Lcd.setCursor(10, 30)
+            Lcd.print('Write failed')
+            Lcd.setTextSize(1)
+            Lcd.setTextColor(0xAAAAAA, 0x330000)
+            Lcd.setCursor(10, 70)
+            Lcd.print(str(e)[:28])
+            return False
 
-                # Card selection
-                for i in range(PAGE):
-                    row_y = 28 + i * 50
-                    idx = page_idx * PAGE + i
-                    if row_y <= ty < row_y + 44 and idx < len(CARDS):
-                        selected = idx
-                        num, label = CARDS[selected]
-                        writer_prompt(label)
-                        break
-            else:
-                # Cancel on screen tap while waiting
-                selected = -1
-                draw_writer(-1, page_idx * PAGE)
+    def wait_remove():
+        for _ in range(60):
+            if not rdr.is_new_card_present():
+                break
+            time.sleep_ms(100)
+        time.sleep_ms(500)
 
-        if selected >= 0 and rdr.is_new_card_present():
-            if rdr.picc_read_card_serial():
-                num, label = CARDS[selected]
-                payload = str(num).zfill(2).encode().ljust(16, b'\x00')
-                try:
-                    rdr.write(BLOCK, payload)
-                    Lcd.clear(0x003300)
-                    Lcd.setTextColor(0x00FF88, 0x003300)
-                    Lcd.setTextSize(2)
-                    Lcd.setCursor(10, 30)
-                    Lcd.print('Written!')
-                    Lcd.setTextSize(1)
-                    Lcd.setTextColor(0xFFFFFF, 0x003300)
-                    Lcd.setCursor(10, 70)
-                    Lcd.print(str(num).zfill(2) + ' — ' + label)
-                    Lcd.setCursor(10, 100)
-                    Lcd.print('Remove card...')
-                except Exception as e:
-                    Lcd.clear(0x330000)
-                    Lcd.setTextColor(0xFF4444, 0x330000)
-                    Lcd.setTextSize(2)
-                    Lcd.setCursor(10, 30)
-                    Lcd.print('Write failed')
-                    Lcd.setTextSize(1)
-                    Lcd.setTextColor(0xAAAAAA, 0x330000)
-                    Lcd.setCursor(10, 70)
-                    Lcd.print(str(e)[:28])
+    # ── Sequential mode ────────────────────────────────────────────────────────
+    if writer_mode == 'seq':
+        def draw_seq(idx):
+            num, label = CARDS[idx]
+            nxt = CARDS[idx + 1] if idx + 1 < len(CARDS) else None
+            Lcd.clear(0x111E1A)
+            Lcd.setTextColor(0x88AA88, 0x111E1A)
+            Lcd.setTextSize(1)
+            Lcd.setCursor(10, 8)
+            Lcd.print('Card ' + str(idx + 1) + ' of ' + str(len(CARDS)))
+            Lcd.setTextColor(0x00FF88, 0x111E1A)
+            Lcd.setTextSize(2)
+            Lcd.setCursor(10, 30)
+            Lcd.print('Tap tag to write:')
+            Lcd.setTextColor(0xFFFFFF, 0x111E1A)
+            Lcd.setCursor(10, 65)
+            Lcd.print(str(num).zfill(2) + '  ' + label[:16])
+            if nxt:
+                Lcd.setTextSize(1)
+                Lcd.setTextColor(0x88AA88, 0x111E1A)
+                Lcd.setCursor(10, 110)
+                Lcd.print('Next up:  ' + str(nxt[0]).zfill(2) + '  ' + nxt[1])
+            Lcd.setTextSize(1)
+            Lcd.setTextColor(0x555555, 0x111E1A)
+            Lcd.setCursor(10, 210)
+            Lcd.print('Tap screen to skip this card')
 
-                for _ in range(60):
-                    if not rdr.is_new_card_present():
-                        break
-                    time.sleep_ms(100)
-                time.sleep_ms(500)
-                selected = -1
-                draw_writer(-1, page_idx * PAGE)
+        seq_idx = 0
+        draw_seq(seq_idx)
 
-        time.sleep_ms(40)
+        while seq_idx < len(CARDS):
+            M5.update()
+
+            # Screen tap = skip
+            if Touch.getCount() > 0:
+                time.sleep_ms(150)
+                seq_idx += 1
+                if seq_idx < len(CARDS):
+                    draw_seq(seq_idx)
+                continue
+
+            if rdr.is_new_card_present():
+                if rdr.picc_read_card_serial():
+                    num, label = CARDS[seq_idx]
+                    ok = write_card(num, label)
+                    wait_remove()
+                    if ok:
+                        seq_idx += 1
+                    if seq_idx < len(CARDS):
+                        draw_seq(seq_idx)
+
+            time.sleep_ms(40)
+
+        Lcd.clear(0x003300)
+        Lcd.setTextColor(0x00FF88, 0x003300)
+        Lcd.setTextSize(2)
+        Lcd.setCursor(10, 80)
+        Lcd.print('All 20 cards')
+        Lcd.setCursor(10, 110)
+        Lcd.print('written!')
+        while True:
+            time.sleep_ms(500)
+
+    # ── Pick-one mode ──────────────────────────────────────────────────────────
+    else:
+        PAGE = 4
+        page_idx = 0
+
+        def draw_writer(sel, offset):
+            Lcd.clear(0x111E1A)
+            Lcd.setTextColor(0x00FF88, 0x111E1A)
+            Lcd.setTextSize(1)
+            Lcd.setCursor(10, 6)
+            Lcd.print('Write Cards — tap to select, tap again to write')
+            Lcd.setTextColor(0x88AA88, 0x111E1A)
+            Lcd.setCursor(270, 6)
+            pg = str(offset // PAGE + 1) + '/' + str((len(CARDS) + PAGE - 1) // PAGE)
+            Lcd.print(pg)
+            for i in range(PAGE):
+                idx = offset + i
+                if idx >= len(CARDS): break
+                num, label = CARDS[idx]
+                y = 28 + i * 50
+                bg = 0x1565A8 if sel == idx else 0x222E2A
+                Lcd.fillRect(8, y, 304, 44, bg)
+                Lcd.setTextColor(0xFFFFFF, bg)
+                Lcd.setTextSize(1)
+                Lcd.setCursor(14, y + 6)
+                Lcd.print(str(num).zfill(2) + '  ' + label)
+
+        def writer_prompt(label):
+            Lcd.clear(0x111E1A)
+            Lcd.setTextColor(0x00FF88, 0x111E1A)
+            Lcd.setTextSize(2)
+            Lcd.setCursor(10, 20)
+            Lcd.print('Tap card to write:')
+            Lcd.setTextColor(0xFFFFFF, 0x111E1A)
+            Lcd.setCursor(10, 60)
+            Lcd.print(label)
+            Lcd.setTextSize(1)
+            Lcd.setTextColor(0x888888, 0x111E1A)
+            Lcd.setCursor(10, 200)
+            Lcd.print('Tap anywhere to cancel')
+
+        selected = -1
+        draw_writer(selected, page_idx * PAGE)
+
+        while True:
+            M5.update()
+
+            if Touch.getCount() > 0:
+                t = Touch.getDetail(0)
+                tx, ty = t.x, t.y
+                time.sleep_ms(120)
+
+                if selected == -1:
+                    if ty > 210:
+                        if tx < 160 and page_idx > 0:
+                            page_idx -= 1
+                            draw_writer(-1, page_idx * PAGE)
+                        elif tx >= 160 and (page_idx + 1) * PAGE < len(CARDS):
+                            page_idx += 1
+                            draw_writer(-1, page_idx * PAGE)
+                        continue
+                    for i in range(PAGE):
+                        row_y = 28 + i * 50
+                        idx = page_idx * PAGE + i
+                        if row_y <= ty < row_y + 44 and idx < len(CARDS):
+                            selected = idx
+                            num, label = CARDS[selected]
+                            writer_prompt(label)
+                            break
+                else:
+                    selected = -1
+                    draw_writer(-1, page_idx * PAGE)
+
+            if selected >= 0 and rdr.is_new_card_present():
+                if rdr.picc_read_card_serial():
+                    num, label = CARDS[selected]
+                    write_card(num, label)
+                    wait_remove()
+                    selected = -1
+                    draw_writer(-1, page_idx * PAGE)
+
+            time.sleep_ms(40)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODE 2 — DIAGNOSE
