@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="css/styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   </head>
   <body class="cards-screen">
     <header class="cards-header">
@@ -30,7 +29,7 @@
       <section class="cards-intro">
         <p class="eyebrow">Prototype deck</p>
         <h1>Print-ready detection cards</h1>
-        <p>Use these cards for the pop-up stall demo. Each card includes a visible label, model class name, and camera-readable QR marker.</p>
+        <p>Use these cards for the pop-up stall demo. Each card includes a visible label and class number matching the RFID values in the reader firmware.</p>
       </section>
       <div id="printable-cards" class="printable-cards"></div>
     </main>
@@ -61,31 +60,24 @@
         condition_remote: 'Opportunities close to home',
       };
 
-      const iconShapes = {
-        persona: 'person',
-        job: 'tool',
-        condition: 'clock',
-        situation: 'spark',
-      };
-
       const container = document.getElementById('printable-cards');
 
       container.innerHTML = categoryOrder.map((category) => {
         const cards = CARDS.filter((card) => card.category === category);
         return `
-          <section class="card-category">
+          <section class="card-category card-category--${category}">
             <div class="card-category-heading">
               <span>${CARD_CATEGORIES[category]}</span>
               <small>${categoryNotes[category]}</small>
             </div>
             <div class="card-grid">
-              ${cards.map((card) => renderCard(card, iconShapes[category])).join('')}
+              ${cards.map((card) => renderCard(card)).join('')}
             </div>
           </section>
         `;
       }).join('');
 
-      function renderCard(card, shape) {
+      function renderCard(card) {
         const description = card.description || descriptions[card.id] || 'Explore matching STROOM opportunities';
         return `
           <article class="print-card print-card--${card.category}">
@@ -95,30 +87,19 @@
               <span>${CARD_CATEGORIES[card.category]}</span>
               <span>Class ${card.classIndex}</span>
             </div>
-            <div class="print-card-icon print-card-icon--${shape}">
-              <span>${card.icon}</span>
+            <div class="print-card-main">
+              <div class="print-card-icon">${card.icon}</div>
+              <div>
+                <h2>${card.label}</h2>
+                <p>${description}</p>
+              </div>
             </div>
-            <h2>${card.label}</h2>
-            <p>${description}</p>
             <footer>
               <span>${card.id}</span>
-              <strong>${String(card.key).toUpperCase()}</strong>
             </footer>
-            <div class="print-card-qr" data-card-id="${card.id}" aria-label="Detection QR for ${card.label}"></div>
           </article>
         `;
       }
-
-      document.querySelectorAll('.print-card-qr').forEach((qrEl) => {
-        new QRCode(qrEl, {
-          text: `stroom-card:${qrEl.dataset.cardId}`,
-          width: 82,
-          height: 82,
-          colorDark: '#1A1A1A',
-          colorLight: '#FFFFFF',
-          correctLevel: QRCode.CorrectLevel.M,
-        });
-      });
     </script>
   </body>
 </html>

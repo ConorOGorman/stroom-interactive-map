@@ -8,135 +8,306 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="css/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   </head>
-  <body class="main-screen">
-    <aside class="control-panel" aria-label="Card detection controls">
-      <div class="brand-lockup">
-        <span class="brand-mark">S</span>
-        <div>
-          <strong>STROOMpoint</strong>
-          <span>Interactive map</span>
-        </div>
+  <body class="main-screen map-only-screen">
+
+    <aside class="location-panel" id="location-panel" aria-label="Location details">
+      <div class="location-panel-image" aria-hidden="true">
+        <button class="close-location" id="close-location" aria-label="Close panel">×</button>
+        <svg viewBox="0 0 360 160" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <!-- sky -->
+          <rect width="360" height="160" fill="#C8E8F5"/>
+          <!-- distant horizon glow -->
+          <rect y="90" width="360" height="70" fill="#A3C9A8" opacity="0.4"/>
+          <!-- water — diagonal river band -->
+          <path d="M0 118 Q90 108 180 116 Q270 124 360 112 L360 160 L0 160Z" fill="#7BB8D4"/>
+          <path d="M0 122 Q90 114 180 120 Q270 126 360 116 L360 128 Q270 122 180 124 Q90 118 0 126Z" fill="#9DCCE0" opacity="0.5"/>
+          <!-- polder fields -->
+          <path d="M0 92 Q60 86 120 94 Q180 102 240 90 Q300 80 360 88 L360 116 Q300 108 240 112 Q180 116 120 112 Q60 108 0 118Z" fill="#B8D9A0"/>
+          <path d="M0 100 Q60 96 120 100 Q180 106 240 96 Q300 88 360 94" stroke="#8FC47A" stroke-width="1.2" fill="none" opacity="0.7"/>
+          <path d="M120 112 Q180 116 240 108" stroke="#8FC47A" stroke-width="1" fill="none" opacity="0.5"/>
+          <!-- far meadow -->
+          <path d="M0 78 Q90 70 180 80 Q270 90 360 74 L360 94 Q300 84 240 90 Q180 96 120 88 Q60 80 0 88Z" fill="#C8E0B8"/>
+          <!-- tree cluster — left -->
+          <ellipse cx="52" cy="72" rx="18" ry="13" fill="#5A9E6B"/>
+          <ellipse cx="44" cy="78" rx="13" ry="10" fill="#4E8E5E"/>
+          <rect x="50" y="83" width="5" height="14" fill="#7A5C42"/>
+          <!-- windmill — centre right -->
+          <rect x="248" y="42" width="4" height="54" fill="#AABBB8"/>
+          <circle cx="250" cy="44" r="3" fill="#8A9E9C"/>
+          <!-- windmill blades -->
+          <line x1="250" y1="44" x2="250" y2="16" stroke="#AABBB8" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="250" y1="44" x2="274" y2="50" stroke="#AABBB8" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="250" y1="44" x2="250" y2="70" stroke="#AABBB8" stroke-width="2.2" stroke-linecap="round" opacity="0.5"/>
+          <line x1="250" y1="44" x2="226" y2="38" stroke="#AABBB8" stroke-width="2.2" stroke-linecap="round" opacity="0.5"/>
+          <!-- farmhouse row -->
+          <rect x="148" y="68" width="16" height="16" fill="#EDE8D8"/>
+          <polygon points="148,68 156,58 164,68" fill="#D9654A" opacity="0.85"/>
+          <rect x="169" y="72" width="12" height="12" fill="#EDE8D8"/>
+          <polygon points="169,72 175,64 181,72" fill="#D9654A" opacity="0.7"/>
+          <!-- church steeple far right -->
+          <rect x="308" y="66" width="10" height="20" fill="#D8D0C0"/>
+          <polygon points="308,66 313,54 318,66" fill="#B8B0A0"/>
+          <!-- subtle grid of field ditches -->
+          <line x1="80" y1="160" x2="100" y2="95" stroke="#8FC47A" stroke-width="0.8" opacity="0.4"/>
+          <line x1="160" y1="160" x2="175" y2="95" stroke="#8FC47A" stroke-width="0.8" opacity="0.4"/>
+          <line x1="240" y1="160" x2="252" y2="112" stroke="#8FC47A" stroke-width="0.8" opacity="0.4"/>
+          <!-- label -->
+          <text x="180" y="150" font-family="Inter, sans-serif" font-size="11" fill="rgba(0,0,0,0.35)" text-anchor="middle" letter-spacing="1">GROENE HART</text>
+        </svg>
       </div>
 
-      <section class="camera-card">
-        <video id="camera-feed" playsinline muted aria-label="Camera feed"></video>
-        <div class="detection-status" id="detection-status-wrap">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span id="detection-status">Starting camera...</span>
+      <div class="location-panel-body">
+        <div class="location-title-block">
+          <h2 data-location-name></h2>
+          <div class="location-meta-row">
+            <span class="location-town" data-location-town></span>
+            <span class="hours-badge" data-location-hours></span>
+          </div>
         </div>
-      </section>
 
-      <section class="selection-panel">
-        <div class="section-label">Your selection</div>
-        <div id="selected-cards" class="selected-cards" aria-live="polite"></div>
-        <button id="clear-cards" class="link-button" type="button">Clear all</button>
-      </section>
+        <p class="location-description" data-location-description></p>
 
-      <div class="panel-actions">
-        <button id="show-map" class="primary-button utility-map-button" type="button" disabled>
-          <span>Show me the map</span>
-          <span aria-hidden="true">-&gt;</span>
-        </button>
-        <button id="get-map" class="primary-button" type="button" disabled>
-          <span>Get my personal map</span>
+        <span class="section-label">What we offer</span>
+        <ul class="service-list" data-location-services></ul>
+
+        <span class="section-label">Your matching cards</span>
+        <div class="tag-row" data-location-tags></div>
+      </div>
+
+      <div class="location-panel-footer">
+        <button class="learn-more-btn" id="learn-more-btn" type="button">
+          Express interest
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </button>
       </div>
     </aside>
 
+    <div class="interest-overlay" id="interest-overlay" aria-hidden="true">
+      <div class="interest-modal" role="dialog" aria-modal="true" aria-labelledby="interest-modal-title">
+        <div class="interest-modal-header">
+          <div>
+            <p class="interest-company" id="interest-company"></p>
+            <h3 id="interest-modal-title">Express your interest</h3>
+          </div>
+          <button class="interest-close" id="interest-close" aria-label="Close">×</button>
+        </div>
+        <p class="interest-description">Leave your name and email and the team will get in touch with more details about this opportunity.</p>
+        <form class="interest-form" id="interest-form" novalidate>
+          <label class="form-field">
+            <span class="form-label">Full name</span>
+            <input type="text" name="name" autocomplete="name" placeholder="Your name" required>
+          </label>
+          <label class="form-field">
+            <span class="form-label">Email address</span>
+            <input type="email" name="email" autocomplete="email" placeholder="your@email.com" required>
+          </label>
+          <button type="submit" class="interest-submit">Send enquiry</button>
+        </form>
+        <div class="interest-success" id="interest-success" hidden>
+          <svg class="success-check-icon" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="26" cy="26" r="23" stroke="#038593" stroke-width="2.5"/>
+            <path d="M16 26l7 7 13-14" stroke="#038593" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <h3>You're all set</h3>
+          <p>Thanks — the team at <strong id="success-company"></strong> will be in touch soon.</p>
+          <button type="button" class="interest-done" id="interest-done">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="rfid-tray" id="rfid-tray">
+      <div class="rfid-tray-cards" id="rfid-tray-cards">
+        <span class="rfid-tray-empty">Scan a card to begin</span>
+      </div>
+      <div class="rfid-tray-controls" id="rfid-tray-controls">
+        <span class="rfid-status-dot" id="rfid-status-dot"></span>
+        <span class="rfid-status-text" id="rfid-status">Not connected</span>
+        <button class="rfid-connect-btn" id="rfid-connect-btn">Connect Reader</button>
+        <button class="rfid-wifi-btn" id="rfid-wifi-btn">Connect via WiFi</button>
+      </div>
+      <form class="rfid-wifi-form" id="rfid-wifi-form" hidden novalidate>
+        <input class="rfid-wifi-input" id="rfid-wifi-ip" type="text" placeholder="192.168.x.x" autocomplete="off" inputmode="decimal">
+        <button type="submit" class="rfid-connect-btn">Connect</button>
+        <button type="button" class="rfid-wifi-cancel" id="rfid-wifi-cancel">Cancel</button>
+      </form>
+    </div>
+
     <main class="map-shell" aria-label="Groene Hart opportunity map">
-      <div id="match-badge" class="match-badge" hidden>0 locations match</div>
       <div class="table-top" id="table-top">
         <div id="map-container" class="map-container"></div>
       </div>
     </main>
 
-    <aside id="location-panel" class="location-panel" hidden>
-      <button class="icon-button close-location" type="button" aria-label="Close location panel">×</button>
-      <div class="section-label">Job listing available</div>
-      <h2 data-location-name></h2>
-      <p data-location-town class="location-meta"></p>
-      <ul data-location-services class="service-list"></ul>
-      <div data-location-tags class="tag-row"></div>
-    </aside>
-
-    <div id="demo-badge" class="demo-badge" hidden>
-      <strong>DEMO MODE</strong>
-      <span>Show the card QR to the camera, or press 1-9/0, Q/W/E, A/S/D/F, Z/X/C.</span>
-    </div>
-
-    <div id="qr-overlay" class="qr-overlay" hidden>
-      <div class="qr-panel" role="dialog" aria-modal="true" aria-labelledby="qr-title">
-        <button id="close-qr" class="icon-button close-qr" type="button" aria-label="Close QR overlay">×</button>
-        <h1 id="qr-title">Scan with your phone</h1>
-        <p>Takes 30 seconds. You'll get your STROOM map by email.</p>
-        <div id="qr-code" class="qr-code"></div>
-        <small data-qr-selection></small>
-      </div>
-    </div>
-
-    <template id="fallback-map-template">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720" role="img" aria-label="Fallback map">
-        <rect width="1000" height="720" fill="#eaeae4"/>
-        <path d="M178 142 C260 54 405 68 493 111 C598 58 724 99 796 181 C891 289 825 432 745 496 C668 579 527 622 405 584 C302 634 179 590 121 503 C55 404 83 250 178 142Z" fill="#cfd8c4" stroke="#4a6642" stroke-width="10"/>
-        <path d="M216 244 C350 190 478 210 586 278 C660 324 727 331 808 302" fill="none" stroke="#8ba6a8" stroke-width="18" stroke-linecap="round" opacity="0.8"/>
-      </svg>
-    </template>
-
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
-      import { initCamera } from './js/camera.js';
-      import { clearCards, removeCard, subscribeToCards } from './js/cards.js';
+      import { initRFID, connectReader, connectWifi, isRFIDSupported } from './js/rfid.js';
+      import { subscribeToCards, removeCard } from './js/cards.js';
       import { initMap, updateMap, closeInfoPanel } from './js/map.js';
-      import { openQrOverlay, closeQrOverlay } from './js/qr.js';
+      import { getMatchedLocations } from './js/locations.js';
 
-      const selectedCardsEl = document.getElementById('selected-cards');
-      const clearButton = document.getElementById('clear-cards');
-      const showMapButton = document.getElementById('show-map');
-      const getMapButton = document.getElementById('get-map');
-      const locationPanel = document.getElementById('location-panel');
-      const matchBadge = document.getElementById('match-badge');
-      const qrOverlay = document.getElementById('qr-overlay');
+      const infoPanel = document.getElementById('location-panel');
+      document.getElementById('close-location').addEventListener('click', () => closeInfoPanel(infoPanel));
 
-      await initMap(document.getElementById('map-container'), locationPanel, matchBadge);
-      await initCamera(
-        document.getElementById('camera-feed'),
-        document.getElementById('detection-status'),
-        document.getElementById('demo-badge')
-      );
+      const interestOverlay = document.getElementById('interest-overlay');
+      const interestCompany = document.getElementById('interest-company');
+      const successCompany = document.getElementById('success-company');
+      const interestForm = document.getElementById('interest-form');
+      const interestSuccess = document.getElementById('interest-success');
+
+      document.getElementById('learn-more-btn').addEventListener('click', () => {
+        const name = document.querySelector('[data-location-name]').textContent;
+        interestCompany.textContent = name;
+        successCompany.textContent = name;
+        interestForm.hidden = false;
+        interestSuccess.hidden = true;
+        interestOverlay.classList.add('is-open');
+        interestOverlay.removeAttribute('aria-hidden');
+      });
+
+      function closeInterestModal() {
+        interestOverlay.classList.remove('is-open');
+        interestOverlay.setAttribute('aria-hidden', 'true');
+      }
+
+      document.getElementById('interest-close').addEventListener('click', closeInterestModal);
+      document.getElementById('interest-done').addEventListener('click', closeInterestModal);
+      interestOverlay.addEventListener('click', (e) => { if (e.target === interestOverlay) closeInterestModal(); });
+      document.getElementById('interest-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = interestForm.querySelector('.interest-submit');
+        const errorEl = interestForm.querySelector('.form-error') || (() => {
+          const el = document.createElement('p');
+          el.className = 'form-error';
+          interestForm.appendChild(el);
+          return el;
+        })();
+        errorEl.textContent = '';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending…';
+
+        const data = new FormData(interestForm);
+        const cardIds = currentCards.map(c => c.id);
+        const matched = getMatchedLocations(cardIds);
+
+        try {
+          const res = await fetch('/api/send-map', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: data.get('name'),
+              email: data.get('email'),
+              cards: currentCards.map(c => ({ id: c.id, label: c.label })),
+              locations: matched.map(l => ({
+                name: l.name, town: l.town, hours: l.hours, services: l.services,
+              })),
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Could not send — please try again.');
+          }
+          interestForm.hidden = true;
+          interestSuccess.hidden = false;
+        } catch (err) {
+          errorEl.textContent = err.message;
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Send enquiry';
+        }
+      });
+
+      await initMap(document.getElementById('map-container'), infoPanel, null);
+
+      let currentCards = [];
+
+      const trayCards = document.getElementById('rfid-tray-cards');
+      const connectBtn = document.getElementById('rfid-connect-btn');
+      const statusDot = document.getElementById('rfid-status-dot');
+      const statusText = document.getElementById('rfid-status');
+      const rfidTray = document.getElementById('rfid-tray');
+      const trayControls = document.getElementById('rfid-tray-controls');
+      let readerConnected = false;
+
+      function updateTrayVisibility(cards) {
+        rfidTray.hidden = readerConnected && cards.length === 0;
+      }
+
+      function renderTray(cards) {
+        updateTrayVisibility(cards);
+        trayCards.innerHTML = '';
+        for (const card of cards) {
+          const chip = document.createElement('span');
+          chip.className = 'rfid-chip';
+          chip.innerHTML = `<span class="chip-icon">${card.icon}</span><span>${card.label}</span><button aria-label="Remove ${card.label}">&times;</button>`;
+          chip.querySelector('button').addEventListener('click', () => removeCard(card.id));
+          trayCards.appendChild(chip);
+        }
+      }
 
       subscribeToCards((cards) => {
-        selectedCardsEl.innerHTML = cards.length
-          ? cards.map((card) => `
-            <div class="selected-chip">
-              <span class="chip-icon">${card.icon}</span>
-              <span>${card.label}</span>
-              <button type="button" aria-label="Remove ${card.label}" data-remove-card="${card.id}">×</button>
-            </div>
-          `).join('')
-          : '<p class="empty-state">Hold up a card or press a demo key.</p>';
-        const hasCards = cards.length > 0;
-        showMapButton.disabled = !hasCards;
-        getMapButton.disabled = !hasCards;
-        updateMap(cards, locationPanel, matchBadge);
+        currentCards = cards;
+        updateMap(cards, infoPanel, null);
+        renderTray(cards);
       });
 
-      selectedCardsEl.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-remove-card]');
-        if (button) removeCard(button.dataset.removeCard);
+      function onStatus(status) {
+        if (status === 'connected') {
+          readerConnected = true;
+          trayControls.hidden = true;
+          wifiForm.hidden = true;
+          updateTrayVisibility([]);
+        } else if (status === 'disconnected') {
+          readerConnected = false;
+          rfidTray.hidden = false;
+          trayControls.hidden = false;
+          wifiForm.hidden = true;
+          statusDot.classList.remove('is-connected');
+          statusText.textContent = 'Reader disconnected';
+          connectBtn.textContent = 'Reconnect';
+          connectBtn.classList.remove('is-connected');
+          connectBtn.disabled = false;
+        } else if (status === 'unsupported') {
+          trayControls.hidden = true;
+        } else if (status === 'error') {
+          trayControls.hidden = false;
+          wifiForm.hidden = true;
+          statusText.textContent = 'Connection failed — try again';
+        }
+      }
+
+      if (!isRFIDSupported()) onStatus('unsupported');
+
+      connectBtn.addEventListener('click', () => connectReader(onStatus));
+
+      const wifiBtn = document.getElementById('rfid-wifi-btn');
+      const wifiForm = document.getElementById('rfid-wifi-form');
+      const wifiIpInput = document.getElementById('rfid-wifi-ip');
+      const wifiCancel = document.getElementById('rfid-wifi-cancel');
+
+      wifiBtn.addEventListener('click', () => {
+        trayControls.hidden = true;
+        wifiForm.hidden = false;
+        wifiIpInput.focus();
       });
-      clearButton.addEventListener('click', clearCards);
-      showMapButton.addEventListener('click', () => document.getElementById('table-top').scrollIntoView({ behavior: 'smooth', block: 'center' }));
-      getMapButton.addEventListener('click', () => openQrOverlay(qrOverlay));
-      document.getElementById('close-qr').addEventListener('click', () => closeQrOverlay(qrOverlay));
-      document.querySelector('.close-location').addEventListener('click', () => closeInfoPanel(locationPanel));
-      document.querySelector('.map-shell').addEventListener('click', (event) => {
-        if (event.target.classList.contains('map-shell')) closeInfoPanel(locationPanel);
+
+      wifiCancel.addEventListener('click', () => {
+        wifiForm.hidden = true;
+        trayControls.hidden = false;
       });
+
+      wifiForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const ip = wifiIpInput.value.trim();
+        if (!ip) return;
+        wifiForm.hidden = true;
+        connectWifi(ip, onStatus);
+      });
+
+      initRFID();
     </script>
   </body>
 </html>

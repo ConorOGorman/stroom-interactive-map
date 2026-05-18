@@ -1,55 +1,69 @@
-# STROOMpoint Interactive Card Detection Map
+# STROOMpoint Interactive Map
 
-Browser-based prototype for a STROOMpoint pop-up stall experience. Visitors hold printed cards up to a laptop camera, the map highlights matching Groene Hart opportunities, and a QR code opens a mocked mobile email follow-up page.
+Browser-based kiosk prototype for a STROOMpoint pop-up stall. Visitors scan RFID-enabled cards or use keyboard shortcuts, and the map highlights matching Groene Hart job and training opportunities.
 
-## Setup
+## Run Locally
 
-1. Clone the repo.
-2. Open `index.html` in Chrome or Firefox.
-3. Allow camera access when prompted.
+Use Vercel dev when testing the email API:
 
-If browser security blocks ES module loading from local files, run a tiny static server from the project folder:
+```sh
+vercel dev --listen 3000
+```
+
+Then open:
+
+```text
+http://localhost:3000
+```
+
+For static-only work, a basic server is enough:
 
 ```sh
 python3 -m http.server 8080
 ```
 
-Then open `http://localhost:8080`.
+## Pages
 
-## Training your own card model
+| File | Purpose |
+|---|---|
+| `index.html` | Main kiosk map with RFID/WebSocket input, Leaflet map, location panel, and interest form |
+| `cards.html` | Printable 20-card deck matching the card IDs/class indexes |
+| `mobile.html` | Mobile follow-up page that can send a selected map by email |
 
-1. Go to teachablemachine.withgoogle.com.
-2. Create an Image Project.
-3. Create one class per card: 21 total, including `no_card`.
-4. For each class, record or upload about 40-60 photos of that card in different lighting conditions and angles.
-5. Train the model.
-6. Click Export, TensorFlow.js, Upload, and copy the URL.
-7. In `js/config.js`, set `MODEL_URL` to your exported model URL.
-
-## Mock mode (development)
-
-If `MODEL_URL` is empty, the app runs in mock mode. Press keyboard keys to simulate card detection:
+## Architecture
 
 ```text
-1: Job Seeker   2: Student     3: Professional  4: Returning  5: Employer
-6: Plumber      7: Electrician 8: Carpenter     9: Catering   0: Healthcare
-Q: IT           W: Admin       E: Driver
-A: Flexible     S: Part-time   D: Full-time     F: Near Home
-Z: No Exp       X: Training    C: Career Change
+js/config.js      Card definitions and keyboard shortcuts
+js/cards.js       Selected-card state and subscriptions
+js/rfid.js        Keyboard mock mode, Web Serial RFID, and WiFi/WebSocket RFID input
+js/locations.js   Mock opportunity data and matching rules
+js/map.js         Leaflet map, Groene Hart outline, marker rendering, location panel
+api/send-map.js   Vercel serverless email endpoint using Resend
 ```
 
-## Printable cards
+## Data Flow
 
-Open `cards.html` to view and print the 20 physical card designs. The page uses the same card labels and model class names as `js/config.js`.
+1. A card is scanned or a keyboard shortcut is pressed.
+2. `js/rfid.js` resolves the card ID or numeric class index.
+3. `addCard()` in `js/cards.js` updates selected-card state.
+4. `index.html` receives the update through `subscribeToCards()`.
+5. `js/map.js` calls `getMatchedLocations()` from `js/locations.js`.
+6. Matching Leaflet markers become visible.
+7. The interest form posts to `/api/send-map`, which sends email through Resend.
 
-Each printable card includes a QR marker. The main camera reader can scan that marker immediately, so the prototype works without training a Teachable Machine model. A trained visual model can still be added later by setting `MODEL_URL`.
+## Email Setup
 
-## Adding the SVG map
+Required environment variables:
 
-Replace `assets/map.svg` with your Groene Hart SVG. Ensure the SVG has a `viewBox` attribute. The `map.js` file reads the `viewBox` and places markers using normalized 0-100 percent coordinates.
+```env
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+EMAIL_FROM="STROOMpoint <onboarding@resend.dev>"
+EMAIL_REPLY_TO=you@example.com
+LEAD_NOTIFY_EMAIL=you@example.com
+```
 
-## Eye tracking (future)
+`LEAD_NOTIFY_EMAIL` is optional.
 
-Eye tracking will be added using WebGazer.js. The camera architecture supports this without modification because `js/camera.js` creates one shared video stream.
+## RFID Cards
 
-WebGazer.js: https://webgazer.cs.brown.edu/
+The browser accepts both full card IDs and numeric `classIndex` values. The current firmware writes compact numeric values such as `07` to RFID tags, which are mapped back to cards through `CARD_BY_CLASS_INDEX` in `js/config.js`.

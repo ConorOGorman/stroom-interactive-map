@@ -1,9 +1,4 @@
-export const MODEL_URL = '';
-export const EYE_TRACKING_ENABLED = false;
-
 export const DETECTION = {
-  fps: 5,
-  confidenceThreshold: 0.75,
   debounceMs: 4000,
 };
 

@@ -40,6 +40,7 @@
           </label>
           <p>Only used to send your map.</p>
           <button class="primary-button" type="submit">Send me my map</button>
+          <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
         </form>
       </section>
 
@@ -59,9 +60,12 @@
 
       const params = new URLSearchParams(window.location.search);
       const cards = (params.get('cards') || '').split(',').map((id) => id.trim()).filter(Boolean);
+      const selectedLocationId = params.get('location');
       const cardSummary = document.getElementById('mobile-card-summary');
       const locationsEl = document.getElementById('mobile-locations');
-      const matched = getMatchedLocations(cards);
+      const matched = selectedLocationId
+        ? getMatchedLocations(cards).filter((location) => location.id === selectedLocationId)
+        : getMatchedLocations(cards);
 
       cardSummary.innerHTML = cards.length
         ? cards.map((id) => {
@@ -80,14 +84,46 @@
         `).join('')
         : `<p class="no-match">We'll help you find the right fit — enter your email below and we'll be in touch.</p>`;
 
-      document.getElementById('contact-form').addEventListener('submit', (event) => {
+      const contactForm = document.getElementById('contact-form');
+      const formStatus = document.getElementById('form-status');
+      const submitButton = contactForm.querySelector('button[type="submit"]');
+
+      contactForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
-        const payload = { name: form.get('name'), email: form.get('email'), cards };
-        // TODO: replace with real email API (SendGrid/Mailchimp)
-        console.log('MOCK EMAIL SENT:', payload);
-        document.getElementById('contact-section').hidden = true;
-        document.getElementById('success-state').hidden = false;
+        const payload = {
+          name: form.get('name'),
+          email: form.get('email'),
+          cards: cards.map((id) => {
+            const card = CARD_BY_ID[id];
+            return card ? { id: card.id, label: card.label, category: card.category } : { id, label: id };
+          }),
+          locations: matched.map((location) => ({
+            id: location.id,
+            name: location.name,
+            town: location.town,
+            hours: location.hours,
+            services: location.services,
+          })),
+        };
+
+        submitButton.disabled = true;
+        formStatus.textContent = 'Sending your map...';
+
+        try {
+          const response = await fetch('/api/send-map', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(result.error || 'Email could not be sent');
+          document.getElementById('contact-section').hidden = true;
+          document.getElementById('success-state').hidden = false;
+        } catch (error) {
+          formStatus.textContent = error.message || 'Email could not be sent. Please try again.';
+          submitButton.disabled = false;
+        }
       });
     </script>
   </body>

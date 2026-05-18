@@ -1,122 +1,174 @@
 import { CARD_BY_ID } from './config.js';
 import { getMatchedLocations, locations } from './locations.js';
 
-let svg = null;
-let markerLayer = null;
+let leafletMap = null;
+const leafletMarkers = new Map(); // locationId → L.Marker
 let selectedMarkerId = null;
-let viewBox = [0, 0, 100, 100];
+let currentCardIds = [];
+
+const featuredLocationIds = [
+  'job_carpenter_8',
+  'job_electrician_2',
+  'job_electrician_8',
+  'job_it_3',
+  'job_carpenter_6',
+  'job_carpenter_2',
+];
+
+const PIN_HTML = `<svg class="pin-svg" width="30" height="42" viewBox="-15 -38 30 42" overflow="visible" xmlns="http://www.w3.org/2000/svg">
+  <path class="pin-body" d="M0 0 C-6 -8 -11 -15 -11 -22 C-11 -29 -6 -34 0 -34 C6 -34 11 -29 11 -22 C11 -15 6 -8 0 0Z"/>
+  <circle class="pin-centre" cx="0" cy="-22" r="4"/>
+</svg>`;
 
 export async function initMap(container, infoPanel, matchBadge) {
-  svg = await loadSvg();
-  svg.classList.add('region-map');
-  container.appendChild(svg);
-  ensureLayers();
+  leafletMap = L.map(container, {
+    center: [52.09, 4.79],
+    zoom: 11,
+    zoomControl: false,
+    attributionControl: false,
+  });
+
+  L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(leafletMap);
+
+  await loadGroeneHartOutline();
   renderMarkers(infoPanel);
-  updateMap([], infoPanel, matchBadge);
+  showFeaturedLocations();
 }
 
 export function updateMap(cards, infoPanel, matchBadge) {
-  if (!markerLayer) return;
-  const ids = cards.map((card) => card.id);
-  const matched = new Map(getMatchedLocations(ids).map((location) => [location.id, location]));
+  if (!leafletMap) return;
+  const ids = cards.map((c) => c.id);
+  currentCardIds = ids;
+  const matched = new Map(getMatchedLocations(ids).map((loc) => [loc.id, loc]));
   const hasSelection = ids.length > 0;
-  markerLayer.querySelectorAll('.map-marker[data-location-id]').forEach((marker) => {
-    const location = locations.find((item) => item.id === marker.dataset.locationId);
-    const isMatched = matched.has(location.id);
-    marker.classList.toggle('marker--matched', isMatched);
-    marker.classList.toggle('marker--unmatched', hasSelection && !isMatched);
-    marker.classList.toggle('marker--selected', selectedMarkerId === location.id);
-    marker.setAttribute('aria-disabled', String(!isMatched));
+
+  leafletMarkers.forEach((marker, locationId) => {
+    const el = marker.getElement();
+    if (!el) return;
+    const isMatched = matched.has(locationId);
+    el.classList.toggle('marker--matched', isMatched);
+    el.classList.toggle('marker--unmatched', hasSelection && !isMatched);
+    el.classList.toggle('marker--selected', selectedMarkerId === locationId);
+    marker.setZIndexOffset(isMatched ? 500 : 0);
   });
-  matchBadge.hidden = !hasSelection;
-  matchBadge.textContent = `${matched.size} location${matched.size === 1 ? '' : 's'} match`;
+
+  if (matchBadge) {
+    matchBadge.hidden = !hasSelection;
+    matchBadge.textContent = `${matched.size} location${matched.size === 1 ? '' : 's'} match`;
+  }
+
   if (selectedMarkerId && !matched.has(selectedMarkerId)) {
     closeInfoPanel(infoPanel);
   }
 }
 
-async function loadSvg() {
-  try {
-    const response = await fetch('assets/map.svg');
-    if (!response.ok) throw new Error('Map SVG not found');
-    const text = await response.text();
-    const parsed = new DOMParser().parseFromString(text, 'image/svg+xml');
-    const loadedSvg = parsed.documentElement;
-    if (!loadedSvg.getAttribute('viewBox')) throw new Error('SVG needs a viewBox');
-    viewBox = loadedSvg.getAttribute('viewBox').split(/\s+/).map(Number);
-    return document.importNode(loadedSvg, true);
-  } catch (error) {
-    const fallback = document.getElementById('fallback-map-template');
-    viewBox = fallback.content.querySelector('svg').getAttribute('viewBox').split(/\s+/).map(Number);
-    return fallback.content.querySelector('svg').cloneNode(true);
-  }
-}
-
-function ensureLayers() {
-  const namespace = 'http://www.w3.org/2000/svg';
-  markerLayer = document.createElementNS(namespace, 'g');
-  markerLayer.setAttribute('id', 'location-markers');
-  const gazeLayer = document.createElementNS(namespace, 'g');
-  gazeLayer.setAttribute('id', 'gaze-overlay');
-  svg.append(markerLayer, gazeLayer);
-}
-
-function renderMarkers(infoPanel) {
-  markerLayer.innerHTML = '';
-  locations.forEach((location) => {
-    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    const body = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const centre = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    const point = percentToSvgPoint(location.svgX, location.svgY);
-    marker.dataset.locationId = location.id;
-    marker.classList.add('map-marker');
-    marker.setAttribute('transform', `translate(${point.x} ${point.y})`);
-    marker.setAttribute('tabindex', '0');
-    marker.setAttribute('role', 'button');
-    marker.setAttribute('aria-label', location.name);
-    body.classList.add('pin-body');
-    body.setAttribute('d', 'M0 0 C-6 -8 -11 -14 -11 -22 C-11 -29 -6 -34 0 -34 C6 -34 11 -29 11 -22 C11 -14 6 -8 0 0Z');
-    centre.classList.add('pin-centre');
-    centre.setAttribute('cx', '0');
-    centre.setAttribute('cy', '-22');
-    centre.setAttribute('r', '4.2');
-    marker.append(body, centre);
-    marker.addEventListener('click', () => {
-      if (!marker.classList.contains('marker--matched')) return;
-      selectedMarkerId = location.id;
-      openInfoPanel(location, infoPanel);
-      markerLayer.querySelectorAll('.map-marker').forEach((item) => item.classList.toggle('marker--selected', item === marker));
-    });
-    marker.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') marker.dispatchEvent(new Event('click'));
-    });
-    markerLayer.appendChild(marker);
+export function showFeaturedLocations(ids = featuredLocationIds) {
+  if (!leafletMap) return;
+  const featured = new Set(ids);
+  leafletMarkers.forEach((marker, locationId) => {
+    const el = marker.getElement();
+    if (!el) return;
+    const isFeatured = featured.has(locationId);
+    el.classList.toggle('marker--matched', isFeatured);
+    el.classList.toggle('marker--unmatched', !isFeatured);
+    el.classList.remove('marker--selected');
+    marker.setZIndexOffset(isFeatured ? 500 : 0);
   });
 }
 
-function percentToSvgPoint(svgX, svgY) {
-  const [minX, minY, width, height] = viewBox;
-  return {
-    x: minX + (width * svgX / 100),
-    y: minY + (height * svgY / 100),
-  };
+async function loadGroeneHartOutline() {
+  try {
+    const response = await fetch('assets/groene-hart.geojson');
+    const data = await response.json();
+    // Outer halo layer
+    L.geoJSON(data, {
+      style: {
+        color: '#077CB3',
+        weight: 14,
+        opacity: 0.08,
+        fillColor: '#00976E',
+        fillOpacity: 0.05,
+      },
+      interactive: false,
+    }).addTo(leafletMap);
+    // Inner crisp line
+    L.geoJSON(data, {
+      style: {
+        color: '#00976E',
+        weight: 3,
+        opacity: 0.72,
+        fill: false,
+      },
+      interactive: false,
+    }).addTo(leafletMap);
+  } catch (_) {
+    // outline is decorative — ignore fetch failures
+  }
+}
+
+function renderMarkers(infoPanel) {
+  locations.forEach((location) => {
+    const icon = L.divIcon({
+      className: 'map-marker',
+      html: PIN_HTML,
+      iconSize: [30, 42],
+      iconAnchor: [15, 38],
+    });
+
+    const marker = L.marker([location.lat, location.lng], { icon }).addTo(leafletMap);
+    const el = marker.getElement();
+    el.dataset.locationId = location.id;
+    el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', location.name);
+
+    marker.on('click', () => {
+      if (!el.classList.contains('marker--matched')) return;
+      if (!infoPanel) return;
+      selectedMarkerId = location.id;
+      openInfoPanel(location, infoPanel);
+      leafletMarkers.forEach((m, id) => {
+        m.getElement()?.classList.toggle('marker--selected', id === location.id);
+      });
+    });
+
+    leafletMarkers.set(location.id, marker);
+  });
 }
 
 function openInfoPanel(location, panel) {
-  panel.hidden = false;
   panel.classList.add('is-open');
   panel.querySelector('[data-location-name]').textContent = location.name;
-  panel.querySelector('[data-location-town]').textContent = `${location.town} · ${location.hours}`;
-  panel.querySelector('[data-location-services]').innerHTML = location.services.map((service) => `<li>${service}</li>`).join('');
-  panel.querySelector('[data-location-tags]').innerHTML = [
+  panel.querySelector('[data-location-town]').textContent = location.town;
+  const hoursBadge = panel.querySelector('[data-location-hours]');
+  hoursBadge.textContent = location.hours;
+  hoursBadge.dataset.hours = location.hours.toLowerCase().replace('-', '');
+  panel.querySelector('[data-location-description]').textContent = location.description;
+  panel.querySelector('[data-location-services]').innerHTML = location.services.map((s) => `<li>${s}</li>`).join('');
+
+  const allRelevant = new Set([
     ...location.relevant_job_types,
-    ...location.relevant_conditions.slice(0, 2),
-  ].map((id) => `<span>${CARD_BY_ID[id]?.label || id}</span>`).join('');
+    ...location.relevant_personas,
+    ...location.relevant_conditions,
+  ]);
+  const matched = currentCardIds.filter((id) => allRelevant.has(id));
+  panel.querySelector('[data-location-tags]').innerHTML = matched
+    .map((id) => {
+      const card = CARD_BY_ID[id];
+      if (!card) return '';
+      return `<span class="tag-chip tag-chip--${card.category}">${card.label}</span>`;
+    })
+    .join('');
 }
 
 export function closeInfoPanel(panel) {
   selectedMarkerId = null;
+  if (!panel) return;
   panel.classList.remove('is-open');
-  panel.hidden = true;
-  markerLayer?.querySelectorAll('.map-marker').forEach((item) => item.classList.remove('marker--selected'));
+  leafletMarkers.forEach((m) => m.getElement()?.classList.remove('marker--selected'));
 }

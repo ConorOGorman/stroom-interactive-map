@@ -1,4 +1,4 @@
-import { CARD_BY_ID, CARDS } from './config.js';
+import { CARD_BY_ID } from './config.js';
 
 const selected = new Set();
 const subscribers = new Set();
@@ -31,30 +31,8 @@ export function removeCard(cardId) {
   notify();
 }
 
-export function clearCards() {
-  selected.clear();
-  notify();
-}
-
-export function hydrateCards(cardIds) {
-  selected.clear();
-  cardIds.forEach((id) => {
-    if (CARD_BY_ID[id] && id !== 'no_card') selected.add(id);
-  });
-  notify();
-}
-
 function notify() {
   const cards = getSelectedCards();
   subscribers.forEach((callback) => callback(cards));
   window.dispatchEvent(new CustomEvent('stroom:cards-changed', { detail: { cards } }));
 }
-
-export function renderCardChip(card) {
-  const chip = document.createElement('span');
-  chip.className = `card-chip card-chip--${card.category}`;
-  chip.innerHTML = `<span class="chip-icon">${card.icon}</span><span>${card.label}</span>`;
-  return chip;
-}
-
-export const selectableCards = CARDS.filter((card) => card.id !== 'no_card');
