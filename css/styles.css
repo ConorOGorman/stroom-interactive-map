@@ -168,12 +168,21 @@ button:disabled {
 .rfid-wifi-btn {
   height: 34px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(7, 124, 179, 0.28);
   border-radius: 8px;
-  background: transparent;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.94);
+  color: #055E88;
   font-size: 13px;
   font-weight: 700;
+  box-shadow: 0 8px 22px rgba(20, 54, 68, 0.18);
+}
+
+.rfid-wifi-btn:hover,
+.rfid-wifi-btn:focus-visible {
+  background: #077CB3;
+  border-color: #077CB3;
+  color: #fff;
+  outline: none;
 }
 
 .rfid-wifi-form {
