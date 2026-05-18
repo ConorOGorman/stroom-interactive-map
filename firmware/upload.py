@@ -5,7 +5,7 @@ Usage: python3 firmware/upload.py [local_file] [remote_name]
 """
 import sys, time, base64, serial
 
-PORT = '/dev/cu.usbmodem1101'
+DEFAULT_PORT = '/dev/cu.usbmodem1101'
 BAUD = 115200
 
 def wait_for(ser, marker, timeout=3.0):
@@ -17,14 +17,14 @@ def wait_for(ser, marker, timeout=3.0):
             return buf
     return buf
 
-def upload(local_path, remote_name):
+def upload(local_path, remote_name, port):
     with open(local_path, 'rb') as f:
         payload = f.read()
 
     b64 = base64.b64encode(payload).decode()
     remote_path = '/flash/apps/' + remote_name
 
-    with serial.Serial(PORT, BAUD, timeout=1) as ser:
+    with serial.Serial(port, BAUD, timeout=1) as ser:
         # Hard interrupt
         for _ in range(3):
             ser.write(b'\r\x03')
@@ -69,5 +69,6 @@ def upload(local_path, remote_name):
 if __name__ == '__main__':
     src = sys.argv[1] if len(sys.argv) > 1 else 'firmware/reader.py'
     dst = sys.argv[2] if len(sys.argv) > 2 else 'stroom_reader.py'
-    print(f'Uploading {src} → /flash/apps/{dst}')
-    upload(src, dst)
+    port = sys.argv[3] if len(sys.argv) > 3 else DEFAULT_PORT
+    print(f'Uploading {src} → /flash/apps/{dst} via {port}')
+    upload(src, dst, port)

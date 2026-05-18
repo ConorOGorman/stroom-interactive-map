@@ -11,6 +11,13 @@ import network  # pyrefly: ignore
 import socket  # pyrefly: ignore
 import hashlib
 import ubinascii  # pyrefly: ignore
+try:
+    import urequests as requests  # pyrefly: ignore
+except:
+    try:
+        import requests  # pyrefly: ignore
+    except:
+        requests = None
 
 # ── WiFi config ───────────────────────────────────────────────────────────────
 # Change these before uploading to the M5Stack. Use a private router or hotspot
@@ -18,6 +25,9 @@ import ubinascii  # pyrefly: ignore
 WIFI_SSID     = 'CHANGE_ME_WIFI_NAME'
 WIFI_PASSWORD = 'CHANGE_ME_WIFI_PASSWORD'
 WS_PORT       = 81
+CLOUD_RELAY_URL = 'https://stroom-interactive-map.vercel.app/api/scans'
+CLOUD_RELAY_SECRET = 'CHANGE_ME_RELAY_SECRET'
+CLOUD_RELAY_SESSION = 'default'
 # ─────────────────────────────────────────────────────────────────────────────
 
 BLOCK = 4
@@ -45,9 +55,11 @@ def show_idle():
         Lcd.setTextSize(1)
         Lcd.setCursor(10, 75)
         Lcd.print('WiFi: ' + device_ip)
+        Lcd.setCursor(10, 90)
+        Lcd.print('WS: ' + device_ip + ':' + str(WS_PORT))
     Lcd.setTextColor(0xAAAAAA, 0x1A3A2A)
     Lcd.setTextSize(1)
-    Lcd.setCursor(10, 95)
+    Lcd.setCursor(10, 110)
     Lcd.print('Tap a card...')
 
 def show_message(line1, line2=''):
@@ -132,6 +144,32 @@ def broadcast(message):
             pass
         ws_clients.remove(conn)
 
+def post_cloud_scan(card_id):
+    if not requests or not CLOUD_RELAY_URL.startswith('https://') or CLOUD_RELAY_SECRET.startswith('CHANGE_ME'):
+        return
+    body = (
+        '{"cardId":"' + json_escape(card_id) + '",'
+        '"session":"' + json_escape(CLOUD_RELAY_SESSION) + '"}'
+    )
+    try:
+        response = requests.post(
+            CLOUD_RELAY_URL,
+            data=body,
+            headers={
+                'Content-Type': 'application/json',
+                'x-reader-secret': CLOUD_RELAY_SECRET,
+            },
+        )
+        try:
+            response.close()
+        except:
+            pass
+    except:
+        pass
+
+def json_escape(value):
+    return str(value).replace('\\', '\\\\').replace('"', '\\"')
+
 def poll_server():
     if not server_sock:
         return
@@ -148,7 +186,8 @@ def poll_server():
 def setup_server(ip):
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind((ip, WS_PORT))
+    # Bind all interfaces so hotspot/router networking can reach the reader.
+    s.bind(('0.0.0.0', WS_PORT))
     s.listen(4)
     s.setblocking(False)
     return s
@@ -188,6 +227,7 @@ while True:
                         msg = 'CARD:' + card_id
                         print(msg)
                         broadcast(msg)
+                        post_cloud_scan(card_id)
                     Lcd.setTextColor(0x00FF88, 0x1A3A2A)
                     Lcd.setTextSize(1)
                     Lcd.setCursor(10, 115)

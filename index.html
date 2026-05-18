@@ -128,6 +128,7 @@
         <span class="rfid-status-dot" id="rfid-status-dot"></span>
         <span class="rfid-status-text" id="rfid-status">Not connected</span>
         <button class="rfid-connect-btn" id="rfid-connect-btn">Connect Reader</button>
+        <button class="rfid-cloud-btn" id="rfid-cloud-btn">Connect Web</button>
         <button class="rfid-wifi-btn" id="rfid-wifi-btn">Connect via WiFi</button>
       </div>
       <form class="rfid-wifi-form" id="rfid-wifi-form" hidden novalidate>
@@ -145,7 +146,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
-      import { initRFID, connectReader, connectWifi, isRFIDSupported } from './js/rfid.js';
+      import { initRFID, connectReader, connectWifi, connectCloudRelay, isRFIDSupported } from './js/rfid.js';
       import { subscribeToCards, removeCard } from './js/cards.js';
       import { initMap, updateMap, closeInfoPanel } from './js/map.js';
       import { getMatchedLocations } from './js/locations.js';
@@ -226,6 +227,7 @@
 
       const trayCards = document.getElementById('rfid-tray-cards');
       const connectBtn = document.getElementById('rfid-connect-btn');
+      const cloudBtn = document.getElementById('rfid-cloud-btn');
       const statusDot = document.getElementById('rfid-status-dot');
       const statusText = document.getElementById('rfid-status');
       const rfidTray = document.getElementById('rfid-tray');
@@ -257,9 +259,14 @@
       function onStatus(status) {
         if (status === 'connected') {
           readerConnected = true;
+          statusDot.classList.add('is-connected');
+          statusText.textContent = 'Reader connected';
+          connectBtn.classList.add('is-connected');
           trayControls.hidden = true;
           wifiForm.hidden = true;
           updateTrayVisibility([]);
+        } else if (status === 'scanned') {
+          statusText.textContent = 'Card scanned';
         } else if (status === 'disconnected') {
           readerConnected = false;
           rfidTray.hidden = false;
@@ -282,6 +289,7 @@
       if (!isRFIDSupported()) onStatus('unsupported');
 
       connectBtn.addEventListener('click', () => connectReader(onStatus));
+      cloudBtn.addEventListener('click', () => connectCloudRelay(onStatus));
 
       const wifiBtn = document.getElementById('rfid-wifi-btn');
       const wifiForm = document.getElementById('rfid-wifi-form');

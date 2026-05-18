@@ -177,6 +177,26 @@ button:disabled {
   box-shadow: 0 8px 22px rgba(20, 54, 68, 0.18);
 }
 
+.rfid-cloud-btn {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(0, 138, 0, 0.32);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #006B22;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 8px 22px rgba(20, 54, 68, 0.16);
+}
+
+.rfid-cloud-btn:hover,
+.rfid-cloud-btn:focus-visible {
+  background: #008A00;
+  border-color: #008A00;
+  color: #fff;
+  outline: none;
+}
+
 .rfid-wifi-btn:hover,
 .rfid-wifi-btn:focus-visible {
   background: #077CB3;

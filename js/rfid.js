@@ -3,6 +3,7 @@ import { CARD_BY_ID, CARD_BY_KEY, CARD_BY_CLASS_INDEX, DETECTION } from './confi
 
 let port = null;
 let wsSocket = null;
+let relayPollTimer = null;
 const debounce = new Map();
 
 export function isRFIDSupported() {
@@ -141,6 +142,46 @@ export function connectWifi(ip, onStatus) {
     wsSocket = null;
     onStatus('error');
   });
+}
+
+export function connectCloudRelay(onStatus, session = 'default') {
+  if (relayPollTimer) {
+    clearTimeout(relayPollTimer);
+    relayPollTimer = null;
+  }
+
+  let lastSeen = Date.now() - 5000;
+  let stopped = false;
+
+  onStatus('connected');
+
+  async function poll() {
+    if (stopped) return;
+    try {
+      const response = await fetch(`/api/scans?session=${encodeURIComponent(session)}&since=${lastSeen}`, {
+        cache: 'no-store',
+      });
+      if (!response.ok) throw new Error('Relay unavailable');
+      const data = await response.json();
+      for (const event of data.events || []) {
+        if (event.ts > lastSeen) lastSeen = event.ts;
+        const added = processCardId(event.cardId);
+        if (added) onStatus('scanned');
+      }
+      relayPollTimer = setTimeout(poll, 900);
+    } catch {
+      onStatus('error');
+      relayPollTimer = setTimeout(poll, 2500);
+    }
+  }
+
+  poll();
+
+  return () => {
+    stopped = true;
+    if (relayPollTimer) clearTimeout(relayPollTimer);
+    relayPollTimer = null;
+  };
 }
 
 function enterFullscreen() {

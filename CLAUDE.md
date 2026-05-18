@@ -71,6 +71,16 @@ LEAD_NOTIFY_EMAIL=you@example.com
 
 `LEAD_NOTIFY_EMAIL` is optional and receives a blind copy. `.env` is ignored by git. If a real Resend key has been shared in chat or committed accidentally, rotate it in Resend before public use.
 
+Required for web/tablet RFID relay:
+
+```env
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+RELAY_SECRET=
+```
+
+The Vercel Marketplace Upstash integration may provide `KV_REST_API_URL` and `KV_REST_API_TOKEN` instead; `api/scans.js` supports both naming schemes. The M5Stack firmware `CLOUD_RELAY_SECRET` must match `RELAY_SECRET`. Do not commit real WiFi passwords, Redis tokens, or relay secrets.
+
 ## Important Files
 
 | File | Purpose |
@@ -80,10 +90,11 @@ LEAD_NOTIFY_EMAIL=you@example.com
 | `mobile.html` | Mobile follow-up page from selected card/location URL params |
 | `css/styles.css` | Shared kiosk, print, mobile, modal, and map styling |
 | `api/send-map.js` | Vercel serverless function that sends custom email via Resend |
+| `api/scans.js` | Vercel serverless RFID scan relay backed by Upstash Redis |
 | `assets/groene-hart.geojson` | Groene Hart outline rendered on the Leaflet map |
 | `js/config.js` | Card definitions, class indexes, keyboard shortcuts |
 | `js/cards.js` | Selected-card singleton state and subscriptions |
-| `js/rfid.js` | Keyboard mock mode, Web Serial RFID, WiFi/WebSocket RFID input, fullscreen shortcuts |
+| `js/rfid.js` | Keyboard mock mode, Web Serial RFID, cloud relay polling, WiFi/WebSocket RFID input, fullscreen shortcuts |
 | `js/locations.js` | Mock opportunity data, town coordinates, matching rules |
 | `js/map.js` | Leaflet initialization, tile layer, GeoJSON outline, markers, location panel |
 | `firmware/multi_writer.py` | Current RFID card writer using numeric class indexes |
@@ -160,6 +171,20 @@ Both `mobile.html` and the kiosk interest modal post JSON to:
 
 `api/send-map.js` validates name/email, limits card/location payload sizes, builds HTML and plain-text email, and calls Resend with `fetch`. It must never expose the Resend API key client-side.
 
+## Web RFID Relay
+
+The hosted HTTPS site cannot reliably connect to `ws://<m5-ip>:81` because browsers block mixed-content local WebSockets from HTTPS pages, and phone hotspots can block device-to-device TCP. The production path is:
+
+```text
+M5Stack reader
+→ POST /api/scans with x-reader-secret
+→ Upstash Redis short-lived scan list
+→ website Connect Web button polls /api/scans
+→ js/rfid.js processes card IDs
+```
+
+`api/scans.js` keeps only recent events and expires the Redis key after one hour.
+
 ## Firmware Notes
 
 The active RFID writer is `firmware/multi_writer.py`, which writes numeric `classIndex` values to RFID tags. The old full-string writer was removed because many card IDs are longer than one RFID block and would be truncated.
@@ -167,7 +192,8 @@ The active RFID writer is `firmware/multi_writer.py`, which writes numeric `clas
 The browser supports two hardware input paths:
 
 - USB Web Serial: `connectReader()`
-- WiFi/WebSocket: `connectWifi(ip, onStatus)` using `ws://<ip>:81`
+- Web relay for hosted phone/tablet use: `connectCloudRelay(onStatus)` polling `/api/scans`
+- WiFi/WebSocket local testing: `connectWifi(ip, onStatus)` using `ws://<ip>:81`
 
 ## Cleanup State
 
