@@ -8,8 +8,10 @@ from machine import I2C, Pin  # pyrefly: ignore
 from unit.rfid import RFIDUnit  # pyrefly: ignore
 import time
 
+# Block 4 is the first user-writable block (blocks 0-3 are manufacturer/access)
 BLOCK = 4
 
+# 20 cards in order — each tag receives its numeric class index zero-padded to 2 chars
 CARDS = [
     (1,  'Job Seeker'),
     (2,  'Student'),
@@ -75,6 +77,7 @@ def show_remove(num, label, err):
         Lcd.print(err[:30])
 
 def reset_reader():
+    # Re-initialising RFIDUnit clears its internal state after each write/read cycle
     global rdr
     rdr = RFIDUnit(i2c, 0x28)
     time.sleep_ms(150)
@@ -97,7 +100,7 @@ while idx < len(CARDS):
         time.sleep_ms(50)
         continue
 
-    # Card detected — try to read serial
+    # picc_read_card_serial() can fail transiently on first detect — retry up to 5×
     serial_ok = False
     for attempt in range(5):
         try:
@@ -119,11 +122,12 @@ while idx < len(CARDS):
         time.sleep_ms(200)
         continue
 
-    # Write the card
+    # Write class index as zero-padded 2-byte ASCII, null-padded to the 16-byte block size
     num, label = CARDS[idx]
     print('WRITING card', idx + 1, num, label)
     err = None
     try:
+        # str.zfill() and bytes.ljust() are absent in this MicroPython build
         b = ('%02d' % num).encode()
         payload = b + b'\x00' * (16 - len(b))
         rdr.write(BLOCK, payload)
@@ -134,7 +138,7 @@ while idx < len(CARDS):
 
     show_remove(num, label, err)
 
-    # Wait for card removal — minimum 1.5s so user can read screen
+    # Minimum 1.5s so the user can read the screen before removing the card
     time.sleep_ms(1500)
     for _ in range(60):
         try:
@@ -149,6 +153,7 @@ while idx < len(CARDS):
     if idx < len(CARDS):
         draw_prompt(idx)
 
+# All 20 cards written — show completion and halt
 Lcd.clear(0x003300)
 Lcd.setTextColor(0x00FF88, 0x003300)
 Lcd.setTextSize(2)

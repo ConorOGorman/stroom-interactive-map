@@ -21,26 +21,27 @@ def upload(local_path, remote_name, port):
     with open(local_path, 'rb') as f:
         payload = f.read()
 
+    # Base64-encode the file so it can be transferred as ASCII over the REPL
     b64 = base64.b64encode(payload).decode()
     remote_path = '/flash/apps/' + remote_name
 
     with serial.Serial(port, BAUD, timeout=1) as ser:
-        # Hard interrupt — UIFlow needs several Ctrl+C to stop its event loop
+        # UIFlow's event loop needs several Ctrl+C interrupts to yield the REPL
         time.sleep(0.5)
         for _ in range(5):
             ser.write(b'\r\x03')
             time.sleep(0.3)
 
-        # Enter raw REPL
+        # Enter raw REPL mode (Ctrl+A = 0x01); responses arrive as plain text without prompts
         ser.write(b'\x01')
         resp = wait_for(ser, b'raw REPL', timeout=3)
         if b'raw REPL' not in resp:
             print('Could not enter raw REPL. Response:', repr(resp))
             sys.exit(1)
         print('Raw REPL OK')
-        ser.read_all()  # flush >
+        ser.read_all()  # flush trailing '>'
 
-        # Build the upload program as one block
+        # Build the upload script: open the remote file, decode each 64-char base64 chunk, write it
         lines = [
             'import ubinascii',
             f"_f=open({repr(remote_path)},'wb')",
@@ -53,7 +54,7 @@ def upload(local_path, remote_name, port):
 
         script = '\n'.join(lines) + '\n'
         ser.write(script.encode())
-        ser.write(b'\x04')  # execute
+        ser.write(b'\x04')  # Ctrl+D executes the buffered script in raw REPL
 
         out = wait_for(ser, b'DONE', timeout=15)
         print()
@@ -62,7 +63,7 @@ def upload(local_path, remote_name, port):
         else:
             print('Upload may have failed. Output:', repr(out[-200:]))
 
-        # Back to friendly REPL
+        # Ctrl+B returns to the normal friendly REPL
         ser.write(b'\x02')
         time.sleep(0.3)
 

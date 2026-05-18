@@ -8,8 +8,9 @@ from machine import I2C, Pin  # pyrefly: ignore
 from unit.rfid import RFIDUnit  # pyrefly: ignore
 import time
 
+# Block 4 is the first user-writable block (blocks 0-3 are manufacturer/access)
 BLOCK = 4
-TEST_NUM = b'07'
+TEST_NUM = b'07'  # numeric class index to write — matches card 07 (Electrician)
 
 i2c = I2C(0, scl=Pin(1), sda=Pin(2), freq=100000)
 rdr = RFIDUnit(i2c, 0x28)
@@ -30,7 +31,8 @@ while True:
         if rdr.picc_read_card_serial():
             diag_show('Writing...')
             try:
-                payload = TEST_NUM.ljust(16, b'\x00')
+                # bytes.ljust() is absent in this MicroPython build — pad manually
+                payload = TEST_NUM + b'\x00' * (16 - len(TEST_NUM))
                 rdr.write(BLOCK, payload)
                 diag_show('Write OK!', 'Remove + re-tap')
             except Exception as e:
@@ -39,6 +41,7 @@ while True:
                 diag_show('Tap card to', 'write+verify')
                 continue
 
+            # Wait for card removal before starting the verification re-tap phase
             for _ in range(50):
                 if not rdr.is_new_card_present():
                     break
@@ -47,6 +50,7 @@ while True:
 
             diag_show('Re-tap card...', 'waiting...')
             found = False
+            # 30-second window (150 × 200ms) to re-tap for verification
             for _ in range(150):
                 if rdr.is_new_card_present():
                     if rdr.picc_read_card_serial():
