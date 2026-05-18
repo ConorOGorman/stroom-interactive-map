@@ -1,13 +1,13 @@
 const towns = [
-  ['Alphen aan den Rijn', 52.1285, 4.6570],
-  ['Gouda',              52.0116, 4.7111],
-  ['Woerden',            52.0883, 4.8883],
-  ['Bodegraven',         52.0861, 4.7466],
-  ['Nieuwkoop',          52.1539, 4.7711],
-  ['Waddinxveen',        52.0408, 4.6347],
-  ['Montfoort',          52.0524, 4.9433],
-  ['Mijdrecht',          52.2067, 4.8639],
-  ['Oudewater',          52.0250, 4.8681],
+  { name: 'Alphen aan den Rijn', lat: 52.1285, lng: 4.6570, spread: 1.0 },
+  { name: 'Gouda', lat: 52.0116, lng: 4.7111, spread: 0.8 },
+  { name: 'Woerden', lat: 52.0883, lng: 4.8883, spread: 0.9 },
+  { name: 'Bodegraven', lat: 52.0861, lng: 4.7466, spread: 1.25 },
+  { name: 'Nieuwkoop', lat: 52.1539, lng: 4.7711, spread: 0.9 },
+  { name: 'Waddinxveen', lat: 52.0408, lng: 4.6347, spread: 0.75 },
+  { name: 'Montfoort', lat: 52.0524, lng: 4.9433, spread: 0.7 },
+  { name: 'Mijdrecht', lat: 52.2067, lng: 4.8639, spread: 0.65 },
+  { name: 'Oudewater', lat: 52.0250, lng: 4.8681, spread: 0.75 },
 ];
 
 const jobTemplates = {
@@ -77,28 +77,28 @@ const jobTemplates = {
   },
 };
 
-// Each job type gets a small compass-point offset so professions fan out around each town
-// while staying inside the Groene Hart boundary.
+// Each job type gets a compass-point offset so professions fan out around each town
+// without turning into a tight pin flower. Boundary towns use smaller spread values.
 const jobSpread = [
-  [ 0.010,  0.000],  // N
-  [ 0.007,  0.012],  // NE
-  [ 0.000,  0.014],  // E
-  [-0.007,  0.012],  // SE
-  [-0.010,  0.000],  // S
-  [-0.007, -0.012],  // SW
-  [ 0.000, -0.014],  // W
-  [ 0.007, -0.012],  // NW
+  [ 0.021,  0.000],  // N
+  [ 0.014,  0.026],  // NE
+  [ 0.000,  0.032],  // E
+  [-0.014,  0.026],  // SE
+  [-0.021,  0.000],  // S
+  [-0.014, -0.026],  // SW
+  [ 0.000, -0.032],  // W
+  [ 0.014, -0.026],  // NW
 ];
 
 export const locations = Object.entries(jobTemplates).flatMap(([jobId, template], jobIndex) =>
-  towns.map(([town, lat, lng], townIndex) => {
+  towns.map((town, townIndex) => {
     const [dLat, dLng] = jobSpread[jobIndex] ?? [0, 0];
     return {
       id: `${jobId}_${townIndex + 1}`,
       name: `${template.names[townIndex]} ${template.service}`,
-      town,
-      lat: lat + dLat,
-      lng: lng + dLng,
+      town: town.name,
+      lat: town.lat + (dLat * town.spread),
+      lng: town.lng + (dLng * town.spread),
     description: template.description,
     services: template.services,
     hours: template.conditions[townIndex % template.conditions.length] === 'condition_parttime'
